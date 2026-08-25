@@ -1,9 +1,22 @@
 ---
 name: linux-bbr-v3
-description: Use when working on MinimaxFlora/Linux-BBR-v3 (Go+bubbletea TUI: BBRv3 kernel install & network tuning on Debian/Ubuntu VPS).
+description: Use when working on Linux-BBR-v3 (Go TUI for BBRv3 kernel).
+version: 1.0.0
+author: MinimaxFlora
+license: MIT
+metadata:
+  hermes:
+    tags: [bbrv3, linux-kernel, bubbletea, tui, golang]
+    related_skills: [bubbletea-tui-dev, github-actions-workflows, linux-kernel-custom-build]
 ---
 
 # Linux-BBR-v3 项目速览
+
+## When to Use
+
+- 需要在 [MinimaxFlora/Linux-BBR-v3](https://github.com/MinimaxFlora/Linux-BBR-v3)（本机仓库 `D:\text\Linux-BBR-v3`，默认分支 master）上做任何开发、修改、构建、发布工作。
+- 需要快速了解项目架构、TUI 菜单、快捷命令机制、CI 发布流程或开发约定。
+- TUI 编码细节（bubbletea 布局/动画/i18n/异步任务）另见 `bubbletea-tui-dev` skill。
 
 ## 项目定位
 
@@ -73,7 +86,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o bbr
 actionlint .github/workflows/*.yml                  # 验证 workflow（本机装在 $LOCALAPPDATA/Temp/actionlint.exe）
 ```
 
-## 开发约定与坑（详见 bubbletea-tui-dev skill）
+## 开发约定与坑
 
 - **Model 值类型**：`Init()` 里赋值无效；跨方法共享运行时状态必须用指针（如 `task *taskState` 持事件通道）。
 - lipgloss v1.1.0 盒模型：`Width(w)` 含内边距；分区线宽度必须 = 实际内容宽，否则折行。
@@ -81,6 +94,10 @@ actionlint .github/workflows/*.yml                  # 验证 workflow（本机�
 - 无头验证渲染：`BBRV3_DUMP=1` 测试把 `View()` 写文件，Python 剥 ANSI 检查每行宽度。
 - 本机（Windows）无 gh CLI：GitHub 操作经 `git credential fill` 取 token 调 REST API；artifact 下载 302→Azure Blob 必须 `curl -L`（urllib 转发 Authorization 会 401）。
 - README 四语：`README.md`（中）/ `README_EN` / `README_JA` / `README_KO`，顶部互链，15 节结构一致；release 说明 emoji 分节（`## ✨` + `### 🆕/♻️/⚙️/📌`）。
+
+## 验证
+
+改动后必须通过：`go build ./... && go vet ./... && go test ./...`；workflow 改动用 actionlint + `python -c "import yaml; yaml.safe_load(open(f))"`；推送后按需用 REST API 读回验证远端（release body / raw 文件）。
 
 ## 相关
 
