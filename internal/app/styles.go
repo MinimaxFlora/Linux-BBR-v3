@@ -101,18 +101,16 @@ func header() string {
 	return cardStyle.Render(b.String())
 }
 
-// statusLine 渲染状态行（TCP/队列/内核，紧凑）。
-func statusLine(algo, qdisc, kernel string) string {
-	return fmt.Sprintf("%s %s    %s %s    %s %s",
-		badgeStyle.Render(i18n.T("menu.algo")), green(algo),
-		badgeStyle.Render(i18n.T("menu.qdisc")), green(qdisc),
-		badgeStyle.Render(i18n.T("menu.kernel")), cyan(kernel))
+// statusBlock 竖排状态块：label: value 每行一个（TCP/队列/内核）。
+func statusBlock(algo, qdisc, kernel string) string {
+	return fmt.Sprintf("%s\n%s\n%s",
+		dim(i18n.T("menu.algo")+": ") + algo,
+		dim(i18n.T("menu.qdisc")+": ") + qdisc,
+		dim(i18n.T("menu.kernel")+": ") + kernel)
 }
 
-// authorLine 渲染作者/项目行。
-func authorLine() string {
-	return pink("♥ ") + i18n.T("menu.author") + "   " + cyan("◆ ") + i18n.T("menu.repo")
-}
+// divider 信息卡内的细分隔线。
+var divider = strings.Repeat("─", 40)
 
 // miniHeader 子页面顶部的小标题行（避免每页重复大卡片）。
 func miniHeader(title string) string {

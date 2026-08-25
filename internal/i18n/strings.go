@@ -7,18 +7,18 @@ func init() {
 
 var zhStrings = map[string]string{
 	// ---- 启动页 ----
-	"boot.title":   "(☆ω☆)✧*｡ 欢迎来到 BBR 管理脚本世界哒！ ✧*｡(☆ω☆)",
+	"boot.title":   "(☆ω☆)✧*｡ 欢迎来到 BBR v3 管理程序世界哒！ ✧*｡(☆ω☆)",
 	"boot.init":    "正在初始化：安装快捷命令 + 应用安全缓解策略...",
 	"boot.waiting": "请稍候...",
 
 	// ---- 主菜单 ----
-	"menu.title":   "(☆ω☆)✧*｡ 欢迎来到 BBR 管理脚本世界哒！ ✧*｡(☆ω☆)",
+	"menu.title":   "(☆ω☆)✧*｡ 欢迎来到 BBR v3 管理程序世界哒！ ✧*｡(☆ω☆)",
 	"menu.algo":    "当前 TCP 拥塞控制算法",
 	"menu.qdisc":   "当前队列管理算法",
 	"menu.kernel":  "当前运行内核",
 	"menu.choose":  "╭( ･ㅂ･)و ✧ 请选择以下操作",
 	"menu.help":    "↑/↓ 选择  ·  数字键 1-9 直接执行  ·  Enter 确认  ·  L 切换语言  ·  q 退出",
-	"menu.lang":    "🌐 语言",
+	"menu.lang":    "语言",
 	"menu.ver":     "版本",
 	"menu.author":  "作者：MinimaxFlora",
 	"menu.repo":    "项目：github.com/MinimaxFlora/Linux-BBR-v3",
@@ -276,18 +276,18 @@ var zhStrings = map[string]string{
 
 var enStrings = map[string]string{
 	// ---- Boot ----
-	"boot.title":   "(☆ω☆)✧*｡ Welcome to the BBR Manager! ✧*｡(☆ω☆)",
+	"boot.title":   "(☆ω☆)✧*｡ Welcome to the BBR v3 Manager! ✧*｡(☆ω☆)",
 	"boot.init":    "Initializing: installing quick command + applying security mitigations...",
 	"boot.waiting": "Please wait...",
 
 	// ---- Menu ----
-	"menu.title":   "(☆ω☆)✧*｡ Welcome to the BBR Manager! ✧*｡(☆ω☆)",
+	"menu.title":   "(☆ω☆)✧*｡ Welcome to the BBR v3 Manager! ✧*｡(☆ω☆)",
 	"menu.algo":    "TCP congestion control",
 	"menu.qdisc":   "Default qdisc",
 	"menu.kernel":  "Running kernel",
 	"menu.choose":  "╭( ･ㅂ･)و ✧ Please choose an action",
 	"menu.help":    "↑/↓ select  ·  1-9 direct run  ·  Enter confirm  ·  L language  ·  q quit",
-	"menu.lang":    "🌐 Language",
+	"menu.lang":    "Language",
 	"menu.ver":     "Version",
 	"menu.author":  "Author: MinimaxFlora",
 	"menu.repo":    "Repo: github.com/MinimaxFlora/Linux-BBR-v3",

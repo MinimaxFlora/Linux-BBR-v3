@@ -46,22 +46,39 @@ func (m Model) viewBoot() string {
 	return b.String()
 }
 
-// viewMenu 主菜单：两个大框（顶部信息卡 + 菜单卡）。
+// viewMenu 主菜单：两个大框（顶部信息卡竖排 + 菜单卡）。
 func (m Model) viewMenu() string {
 	env := currentEnv()
 
-	// 顶部大框：品牌 + 欢迎 + 语言/版本 + 状态 + 作者
+	// 顶部信息卡：竖排布局（品牌/欢迎 → 语言版本 → 作者项目 → 状态）
+	algoVal := green(env.CurrentAlgo)
+	if env.CurrentAlgo != "bbr" {
+		algoVal = yellow(env.CurrentAlgo)
+	}
+	if env.CurrentAlgo == "" {
+		algoVal = dim("—")
+	}
+	qdiscVal := green(env.CurrentQdisc)
+	if env.CurrentQdisc == "" {
+		qdiscVal = dim("—")
+	}
 	var top strings.Builder
 	top.WriteString(titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version))
 	top.WriteString("\n\n")
 	top.WriteString(dim("✧  ") + bold(i18n.T("boot.title")))
 	top.WriteString("\n\n")
-	top.WriteString(langStyle.Render("🌐 "+i18n.T("menu.lang")+": "+langLabel()) + "   " +
+	top.WriteString(langStyle.Render("🌐 "+i18n.T("menu.lang")+": "+langLabel()) + "    " +
 		dim(i18n.T("menu.ver")+": ") + bold(Version))
 	top.WriteString("\n\n")
-	top.WriteString(statusLine(env.CurrentAlgo, env.CurrentQdisc, kernelVersionHint()))
+	top.WriteString(dim(divider))
 	top.WriteString("\n\n")
-	top.WriteString(authorLine())
+	top.WriteString(pink("♥  ") + i18n.T("menu.author"))
+	top.WriteString("\n")
+	top.WriteString(cyan("◆  ") + i18n.T("menu.repo"))
+	top.WriteString("\n\n")
+	top.WriteString(dim(divider))
+	top.WriteString("\n\n")
+	top.WriteString(statusBlock(algoVal, qdiscVal, cyan(kernelVersionHint())))
 
 	// 菜单大框
 	var items strings.Builder
