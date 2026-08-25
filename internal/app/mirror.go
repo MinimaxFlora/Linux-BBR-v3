@@ -48,9 +48,9 @@ func (m Model) handleMirrorKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // applyMirror 持久化网络源并展示结果。
 func (m Model) applyMirror(v string) (Model, tea.Cmd) {
 	if err := netutil.SetMirror(v); err != nil {
-		return m.showResult(i18n.T("mirror.failTitle"), err.Error())
+		return m.showResultSimple(i18n.T("mirror.failTitle"), err.Error())
 	}
-	return m.showResult(i18n.T("mirror.savedTitle"), i18n.Tf("mirror.savedMsg", mirrorLabel(v)))
+	return m.showResultSimple(i18n.T("mirror.savedTitle"), i18n.Tf("mirror.savedMsg", mirrorLabel(v)))
 }
 
 // mirrorLabel 网络源值 → 显示名（auto/direct 用 i18n，URL 原样）。
