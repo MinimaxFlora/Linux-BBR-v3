@@ -78,7 +78,7 @@ func (m Model) viewMenu() string {
 	}
 
 	// 信息卡：欢迎语 / 作者·项目 / 状态（竖排分区）
-	info := joinSections(cardWidth(m.width),
+	info := joinSections(0,
 		[]string{dim("✧  ") + bold(i18n.T("boot.title"))},
 		[]string{
 			pink("♥  ") + dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
@@ -92,7 +92,7 @@ func (m Model) viewMenu() string {
 	for _, it := range menuItems {
 		rows = append(rows, itemRow{num: padNum(it.num) + ".", icon: it.icon, label: i18n.T(it.labelKey)})
 	}
-	menu := joinSections(cardWidth(m.width),
+	menu := joinSections(0,
 		[]string{cardTitle(i18n.T("menu.choose"))},
 		strings.Split(renderItems(rows, m.menuCursor), "\n"),
 	)
@@ -121,7 +121,7 @@ func (m Model) viewQdisc() string {
 	for _, opt := range qdiscOptions {
 		rows = append(rows, itemRow{num: padNum(opt.num) + ".", icon: "🚦", label: i18n.T(opt.labelKey)})
 	}
-	content := joinSections(cardWidth(m.width),
+	content := joinSections(0,
 		[]string{cardTitle("⚡ " + i18n.T("qdisc.title"))},
 		strings.Split(renderItems(rows, m.qdiscCursor), "\n"),
 	)
@@ -144,7 +144,7 @@ func (m Model) viewProfile() string {
 	if m.profileCursor == 1 {
 		lines = append(lines, "", yellow(i18n.T("profile.warn")))
 	}
-	content := joinSections(cardWidth(m.width),
+	content := joinSections(0,
 		[]string{cardTitle(i18n.T("profile.title"))},
 		lines,
 	)
@@ -163,7 +163,7 @@ func (m Model) viewConfirm() string {
 		lines = append(lines, itemStyle.Render(p))
 	}
 	lines = append(lines, "", yellow(i18n.T("confirm.prompt")))
-	content := joinSections(cardWidth(m.width),
+	content := joinSections(0,
 		[]string{cardTitle(i18n.T("confirm.title"))},
 		lines,
 	)
@@ -184,7 +184,7 @@ func (m Model) viewInput() string {
 	if m.inputErr != "" {
 		lines = append(lines, "", red("✘ "+m.inputErr))
 	}
-	content := joinSections(cardWidth(m.width),
+	content := joinSections(0,
 		[]string{cardTitle(i18n.T("menu.item7"))},
 		lines,
 	)
@@ -214,7 +214,7 @@ func (m Model) viewVersion() string {
 	if len(m.tags) > 12 {
 		lines = append(lines, "", dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))))
 	}
-	content := joinSections(cardWidth(m.width),
+	content := joinSections(0,
 		[]string{cardTitle(i18n.T("version.title"))},
 		lines,
 	)

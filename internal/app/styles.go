@@ -24,10 +24,6 @@ const (
 	brandYellow = "#fbbf24"
 	brandRed    = "#f87171"
 	brandDim    = "#94a3b8"
-
-	// 深色背景基调
-	bgTop    = "#1e1b3a" // 顶栏深紫
-	bgBottom = "#141228" // 底栏更深
 )
 
 // 样式主题。
@@ -44,17 +40,12 @@ var (
 	// 页面/面板标题（青色加粗）
 	headerStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(brandCyan))
 
-	// 顶部状态栏（整条深紫背景）
+	// 顶部标题条（圆角边框窄条，宽度跟随内容——参考 OpenClaw 安装 TUI，不撑满、无整条背景）
 	topBarStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#e2e8f0")).
-			Background(lipgloss.Color(bgTop)).
-			Padding(0, 1)
-
-	// 底部快捷键栏（整条深色背景）
-	bottomBarStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#cbd5e1")).
-			Background(lipgloss.Color(bgBottom)).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#4c3a8f")).
 			Padding(0, 1)
 
 	// 底栏按键高亮（粉色）
@@ -133,17 +124,8 @@ func logo() string { return gradientText("✦ BBRv3 ✦", brandPink, brandCyan) 
 
 // ---------- 顶栏 / 底栏 ----------
 
-// fullWidth 让条状样式撑满终端宽度（k9s 整条状态栏效果）。
-// 注意 lipgloss v1.1.0 的 Width() 含内边距：总盒宽 = Width + 边框。
-func (m Model) fullWidth(st lipgloss.Style) lipgloss.Style {
-	if m.width > 2 {
-		return st.Width(m.width)
-	}
-	return st
-}
-
-// topBar 顶部状态栏：✦ BBRv3 ✦ v1.0.0  ❯ 页面标题  │  状态  │  🌐 语言。
-// 终端宽度不足时依次省略状态段、语言段，避免换行破坏整条背景。
+// topBar 顶部标题条：✦ BBRv3 ✦ v1.0.0  ❯ 页面标题  │  状态  │  🌐 语言。
+// 圆角边框窄条（宽度跟随内容）；单行超过终端宽度时依次省略状态段、语言段。
 func (m Model) topBar(pageTitle string) string {
 	left := logo() + " " + badgeStyle.Render(Version)
 	if pageTitle != "" {
@@ -170,44 +152,32 @@ func (m Model) topBar(pageTitle string) string {
 	lang := "🌐 " + langLabel()
 
 	full := left + dim("   │   ") + state + dim("   │   ") + lang
-	// 宽度余量 -4：留出条内边距，防止折行破坏整条背景
 	if m.width <= 0 || lipgloss.Width(full) <= m.width-4 {
-		return m.fullWidth(topBarStyle).Render(full)
+		return topBarStyle.Render(full)
 	}
 	mid := left + dim("   │   ") + lang
 	if lipgloss.Width(mid) <= m.width-4 {
-		return m.fullWidth(topBarStyle).Render(mid)
+		return topBarStyle.Render(mid)
 	}
-	return m.fullWidth(topBarStyle).Render(left)
+	return topBarStyle.Render(left)
 }
 
-// bottomBar 底部快捷键栏（k9s 风格：整条深色背景 + 粉色按键）。
+// bottomBar 底部快捷键：粉色按键 + 灰色说明，上方短分隔线（跟随内容宽，不撑满）。
 func (m Model) bottomBar(keys ...[2]string) string {
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
 		parts = append(parts, barKey.Render(k[0])+" "+dim(k[1]))
 	}
-	return m.fullWidth(bottomBarStyle).Render(strings.Join(parts, "   "))
+	line := strings.Join(parts, "   ")
+	rule := dim(strings.Repeat("─", lipgloss.Width(line)+2))
+	return rule + "\n" + line
 }
 
 // ---------- 卡片内容 ----------
 
-// cardWidth 卡片内容宽度（总宽 - 边框 2 - 内边距 4）；窄终端返回 0（自然宽度）。
-func cardWidth(w int) int {
-	if w > 26 {
-		return w - 6
-	}
-	return 0
-}
-
-// renderCard 渲染全宽卡片：内容行补齐到终端宽度，右边框齐整（lazygit 面板效果）。
-// Width() 含内边距，故传 总宽-2（边框），内容即 总宽-6。
+// renderCard 渲染内容卡片（圆角紫边框，宽度跟随内容，不撑满）。
 func (m Model) renderCard(content string) string {
-	st := cardStyle
-	if m.width > 26 {
-		st = st.Width(m.width - 2)
-	}
-	return st.Render(content)
+	return cardStyle.Render(content)
 }
 
 // joinSections 用与卡片等宽的分隔线连接多个内容段（卡片内分区）。
