@@ -1,9 +1,10 @@
 ---
 name: linux-bbr-v3
 description: Use when working on Linux-BBR-v3 (Go TUI for BBRv3 kernel).
-version: 1.0.0
-author: MinimaxFlora
+version: 0.1.0
+author: MinimaxFlora, Hermes Agent
 license: MIT
+platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [bbrv3, linux-kernel, bubbletea, tui, golang]
