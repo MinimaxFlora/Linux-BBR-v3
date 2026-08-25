@@ -14,10 +14,41 @@ Debian/Ubuntu VPS 向けの BBRv3 カーネル導入 & ネットワーク加速�
 
 ## 使い方
 
-```bash
-# ワンライナーでインストール & 実行（アーキテクチャを自動判定し、最新バイナリをダウンロードして起動）
-bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+**`curl` でインストール：**
+
+> GitHub ソース（海外環境またはプロキシ環境向け）
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
 ```
+
+> または jsDelivr CDN ソース（中国国内向け）
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
+```
+
+**`wget` でインストール：**
+
+> GitHub ソース
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> または jsDelivr CDN ソース
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> 中国国内でバイナリをダウンロードする場合はミラーを併用：`export BBRV3_MIRROR=https://ghfast.top/`（「中国国内ネットワーク対応」参照）。
 
 初回実行時に `bbr` ショートカットコマンドが自動インストールされます。以降は直接実行できます：
 

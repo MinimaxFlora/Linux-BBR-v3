@@ -14,10 +14,41 @@ Debian/Ubuntu VPS용 BBRv3 커널 설치 및 네트워크 가속 관리 프로�
 
 ## 사용 방법
 
-```bash
-# 원클릭 설치 및 실행(아키텍처 자동 감지, 최신 바이너리 다운로드 후 시작)
-bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+**`curl`로 설치:**
+
+> GitHub 소스(해외 환경 또는 프록시 환경 권장)
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
 ```
+
+> 또는 jsDelivr CDN 소스(중국 국내용)
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
+```
+
+**`wget`으로 설치:**
+
+> GitHub 소스
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> 또는 jsDelivr CDN 소스
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> 중국 국내에서 바이너리를 다운로드할 때는 미러를 함께 사용: `export BBRV3_MIRROR=https://ghfast.top/`(「중국 국내 네트워크 지원」 참조).
 
 첫 실행 후 프로그램이 `bbr` 빠른 명령을 자동으로 설치합니다. 이후에는 바로 실행할 수 있습니다:
 

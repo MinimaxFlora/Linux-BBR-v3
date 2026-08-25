@@ -14,10 +14,41 @@
 
 ## 运行
 
-```bash
-# 一键安装并运行（自动检测架构，下载最新版二进制后启动）
-bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+**使用 `curl` 安装：**
+
+> GitHub 源（推荐海外环境或具备代理环境使用）
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
 ```
+
+> 或 jsDelivr CDN 源（国内环境拉取安装脚本）
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
+```
+
+**使用 `wget` 安装：**
+
+> GitHub 源
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> 或 jsDelivr CDN 源
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> 国内下载二进制可配合镜像：`export BBRV3_MIRROR=https://ghfast.top/`（见「国内网络支持」）。
 
 首次运行后程序会自动安装 `bbr` 快捷命令，之后可直接运行：
 

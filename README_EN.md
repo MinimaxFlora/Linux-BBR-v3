@@ -14,10 +14,41 @@ This project is a **Go + [bubbletea](https://github.com/charmbracelet/bubbletea)
 
 ## Usage
 
-```bash
-# One-shot install & run (auto-detects arch, downloads the latest binary and starts it)
-bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+**Install with `curl`:**
+
+> GitHub source (recommended for overseas or proxied environments)
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
 ```
+
+> Or jsDelivr CDN source (for mainland China networks)
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
+```
+
+**Install with `wget`:**
+
+> GitHub source
+
+```sh
+export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> Or jsDelivr CDN source
+
+```sh
+export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> For the binary download in mainland China, pair it with a mirror: `export BBRV3_MIRROR=https://ghfast.top/` (see "China Mainland Network Support").
 
 After the first run, the program automatically installs the `bbr` quick command. From then on you can just run:
 
