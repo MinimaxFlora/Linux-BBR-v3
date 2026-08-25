@@ -5,6 +5,7 @@ package system
 
 import (
 	"bufio"
+	"errors"
 	"context"
 	"fmt"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // Env 描述当前系统环境。
@@ -100,7 +102,7 @@ func RequireAPT(ctx context.Context) error {
 	if execx.RunOK(ctx, "apt-get", "--version") {
 		return nil
 	}
-	return fmt.Errorf("此程序仅支持 Debian/Ubuntu 系统，请在支持 apt-get 和 .deb 内核包的系统上运行！\nAlpine Linux 等非 Debian 系统暂不支持安装本项目内核包。")
+	return errors.New(i18n.T("sys.aptOnly"))
 }
 
 // depPackage 命令名 → Debian/Ubuntu 软件包名映射。
@@ -133,11 +135,11 @@ func EnsureDeps(ctx context.Context, log execx.Logger) error {
 	if len(pkgs) == 0 {
 		return nil
 	}
-	log.Logf("缺少依赖：%s，正在安装...", strings.Join(pkgs, " "))
+	log.Logf(i18n.Tf("sys.deps", strings.Join(pkgs, " ")))
 	_ = execx.RunOK(ctx, "apt-get", "update")
 	args := append([]string{"install", "-y"}, pkgs...)
 	if _, err := execx.Run(ctx, log, "apt-get", args...); err != nil {
-		log.Logf("⚠ 依赖安装未完全成功（不影响本次运行，相关功能可能受限）：%v", err)
+		log.Logf(i18n.Tf("sys.depsWarn", err))
 	}
 	return nil
 }
@@ -145,7 +147,7 @@ func EnsureDeps(ctx context.Context, log execx.Logger) error {
 // CheckArch 校验架构，返回 release 架构名。
 func CheckArch(e *Env) error {
 	if e.ArchFilter == "" {
-		return fmt.Errorf("此程序只支持 ARM(aarch64) 和 x86_64 架构，当前架构：%s", e.Arch)
+		return fmt.Errorf("%s", i18n.Tf("sys.archOnly", e.Arch))
 	}
 	return nil
 }
@@ -154,7 +156,7 @@ func CheckArch(e *Env) error {
 // 原脚本 assert_supported_kernel_install_system：最低支持 Ubuntu 24.04+ / Debian 12+。
 func AssertSupportedKernelInstallSystem(ctx context.Context, o *OSRelease) error {
 	if o == nil || o.ID == "" {
-		return fmt.Errorf("无法识别当前系统版本，已拒绝安装 7.x 主线内核。\n最低支持：Ubuntu 24.04+ / Debian 12+；推荐系统：Ubuntu 24.04+ / Debian 12。")
+		return errors.New(i18n.T("sys.osUnknown"))
 	}
 
 	var minVersion, distroName string
@@ -173,7 +175,7 @@ func AssertSupportedKernelInstallSystem(ctx context.Context, o *OSRelease) error
 		if name == "" {
 			name = "未知系统"
 		}
-		return fmt.Errorf("当前系统为 %s，不在 7.x 主线内核安装白名单内。\n最低支持：Ubuntu 24.04+ / Debian 12+；推荐系统：Ubuntu 24.04+ / Debian 12。旧系统/衍生系统可能因用户态、initramfs 或引导链路过旧导致 kernel panic。", name)
+		return fmt.Errorf("%s", i18n.Tf("sys.osNotAllow", name))
 	}
 
 	if o.VersionID == "" || !bbr.VersionGE(o.VersionID, minVersion) {
@@ -181,7 +183,7 @@ func AssertSupportedKernelInstallSystem(ctx context.Context, o *OSRelease) error
 		if name == "" {
 			name = o.ID
 		}
-		return fmt.Errorf("当前系统版本过旧：%s。已拒绝安装 7.x 主线内核。\n最低要求：%s %s+。推荐使用 Ubuntu 24.04+ 或 Debian 12+。请先升级系统，再重新运行本程序。\n你仍可使用状态检查、网络调优、清空优化或卸载功能。", name, distroName, minVersion)
+		return fmt.Errorf("%s", i18n.Tf("sys.osTooOld", name, distroName, minVersion))
 	}
 	return nil
 }
@@ -192,4 +194,9 @@ func IsRoot() bool {
 		return true
 	}
 	return os.Geteuid() == 0
+}
+
+// KernelRelease 返回当前内核版本（uname -r），失败返回空。
+func KernelRelease() string {
+	return strings.TrimSpace(execx.TryOutput(context.Background(), "uname", "-r"))
 }

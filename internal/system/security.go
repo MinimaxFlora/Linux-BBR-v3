@@ -9,6 +9,7 @@ import (
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // SecurityRules Dirty Frag 风险面收敛规则（原 6 条：blacklist + install /bin/false）。
@@ -98,9 +99,9 @@ func ApplySecurityMitigations(ctx context.Context, log execx.Logger) error {
 			removeLineFromFile(ctx, bbr.SecurityModprobeConfPath, "blacklist algif_aead")
 			removeLineFromFile(ctx, bbr.SecurityModprobeConfPath, "install algif_aead /bin/false")
 			changed++
-			log.Logf("✔ 已移除旧的 algif_aead 黑名单；CVE-2026-31431 风险由当前内核配置侧收敛")
+			log.Logf(i18n.T("sec.removedAead"))
 		} else {
-			log.Logf("⚠ 当前运行内核尚未确认关闭 CRYPTO_USER_API_AEAD，暂保留旧的 algif_aead 黑名单")
+			log.Logf(i18n.T("sec.keepAead"))
 		}
 	}
 
@@ -116,15 +117,15 @@ func ApplySecurityMitigations(ctx context.Context, log execx.Logger) error {
 	for _, mod := range securityModules {
 		if moduleLoaded(ctx, mod) {
 			if execx.RunOK(ctx, "modprobe", "-r", mod) {
-				log.Logf("✔ 已卸载 %s 模块，当前会话已完成缓解", mod)
+				log.Logf(i18n.Tf("sec.modUnloaded", mod))
 			} else {
-				log.Logf("⚠ %s 当前被占用，已写入黑名单，重启后将生效", mod)
+				log.Logf(i18n.Tf("sec.modBusy", mod))
 			}
 		}
 	}
 
 	if changed > 0 {
-		log.Logf("✔ 已写入安全策略：%s", bbr.SecurityModprobeConfPath)
+		log.Logf(i18n.Tf("sec.written", bbr.SecurityModprobeConfPath))
 	}
 	return nil
 }

@@ -1,30 +1,42 @@
 package app
 
 import (
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// menuEntry 主菜单项（与 install.sh 的 12 项一一对应）。
+// menuEntry 主菜单项（原 12 项合并 4-7 为 1 项，共 9 项）。
 type menuEntry struct {
 	num   string
 	icon  string
-	label string
+	labelKey string
 	act   func(Model) (Model, tea.Cmd)
 }
 
 var menuItems = []menuEntry{
-	{num: " 1", icon: "🚀", label: "安装或更新 BBR v3 (最新版)", act: menuInstallLatest},
-	{num: " 2", icon: "📚", label: "指定版本安装", act: menuInstallSpecific},
-	{num: " 3", icon: "🔍", label: "检查 BBR v3 状态", act: menuCheckStatus},
-	{num: " 4", icon: "⚡", label: "启用 BBR + FQ", act: menuQdisc("fq")},
-	{num: " 5", icon: "⚡", label: "启用 BBR + FQ_CODEL", act: menuQdisc("fq_codel")},
-	{num: " 6", icon: "⚡", label: "启用 BBR + FQ_PIE", act: menuQdisc("fq_pie")},
-	{num: " 7", icon: "⚡", label: "启用 BBR + CAKE", act: menuQdisc("cake")},
-	{num: " 8", icon: "🌏", label: "亚太机器 TCP 调优", act: menuAPACTuning},
-	{num: " 9", icon: "🗑️", label: "卸载 BBR 内核", act: menuUninstall},
-	{num: "10", icon: "🧠", label: "BBR v3 智能带宽优化", act: menuSmartTuning},
-	{num: "11", icon: "🧹", label: "清空网络优化配置", act: menuClearOptimizations},
-	{num: "12", icon: "🧨", label: "BBR v3 疯批模式（极限测速挑战）", act: menuExtremeMode},
+	{num: "1", icon: "🚀", labelKey: "menu.item1", act: menuInstallLatest},
+	{num: "2", icon: "📚", labelKey: "menu.item2", act: menuInstallSpecific},
+	{num: "3", icon: "🔍", labelKey: "menu.item3", act: menuCheckStatus},
+	{num: "4", icon: "⚡", labelKey: "menu.item4", act: menuQdiscSelect},
+	{num: "5", icon: "🌏", labelKey: "menu.item5", act: menuAPACTuning},
+	{num: "6", icon: "🗑️", labelKey: "menu.item6", act: menuUninstall},
+	{num: "7", icon: "🧠", labelKey: "menu.item7", act: menuSmartTuning},
+	{num: "8", icon: "🧹", labelKey: "menu.item8", act: menuClearOptimizations},
+	{num: "9", icon: "🧨", labelKey: "menu.item9", act: menuExtremeMode},
+}
+
+// qdiscOptions 加速模式子菜单（原菜单 4-7 合并而来）。
+var qdiscOptions = []struct {
+	num   string
+	labelKey string
+	qdisc string
+}{
+	{"1", "qdisc.item1", "fq"},
+	{"2", "qdisc.item2", "fq_codel"},
+	{"3", "qdisc.item3", "fq_pie"},
+	{"4", "qdisc.item4", "cake"},
 }
 
 // handleKey 处理当前页面的按键。
@@ -32,6 +44,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch m.page {
 	case PageMenu:
 		return m.handleMenuKey(msg)
+	case PageQdisc:
+		return m.handleQdiscKey(msg)
 	case PageProfile:
 		return m.handleProfileKey(msg)
 	case PageConfirm:
@@ -46,11 +60,20 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleMenuKey 主菜单按键：数字直接触发，↑↓+Enter 选择，q 退出。
+// handleMenuKey 主菜单按键：数字直接触发，↑↓+Enter 选择，L 切换语言，q 退出。
 func (m Model) handleMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "q", "ctrl+c", "esc":
 		return m, tea.Quit
+	case "l", "L":
+		// 中英文切换
+		if i18n.IsEn() {
+			i18n.Set(i18n.Zh)
+		} else {
+			i18n.Set(i18n.En)
+		}
+		i18n.Persist()
+		return m, nil
 	case "up", "k":
 		if m.menuCursor > 0 {
 			m.menuCursor--
@@ -67,12 +90,50 @@ func (m Model) handleMenuKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "0":
 		return m, tea.Quit
 	}
-	// 数字键 1-12 直接触发
+	// 数字键 1-9 直接触发
 	for _, it := range menuItems {
-		if msg.String() == it.num[1:] {
+		if msg.String() == it.num {
 			return it.act(m)
 		}
 	}
+	return m, nil
+}
+
+// handleQdiscKey 队列算法子菜单按键。
+func (m Model) handleQdiscKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "q", "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		return m.goMenu()
+	case "up", "k":
+		if m.qdiscCursor > 0 {
+			m.qdiscCursor--
+		}
+		return m, nil
+	case "down", "j":
+		if m.qdiscCursor < len(qdiscOptions)-1 {
+			m.qdiscCursor++
+		}
+		return m, nil
+	case "enter":
+		opt := qdiscOptions[m.qdiscCursor]
+		return menuQdisc(opt.qdisc)(m)
+	}
+	// 数字键 1-4
+	for i, opt := range qdiscOptions {
+		if msg.String() == opt.num {
+			m.qdiscCursor = i
+			return menuQdisc(opt.qdisc)(m)
+		}
+	}
+	return m, nil
+}
+
+// menuQdiscSelect 打开队列算法子菜单。
+func menuQdiscSelect(m Model) (Model, tea.Cmd) {
+	m.page = PageQdisc
+	m.qdiscCursor = 0
 	return m, nil
 }
 
@@ -189,4 +250,12 @@ func (m Model) handleResultKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.goMenu()
 	}
 	return m, nil
+}
+
+// bbrProfile 索引转 Profile。
+func bbrProfile(i int) bbr.Profile {
+	if i == 1 {
+		return bbr.ProfileMax
+	}
+	return bbr.ProfileStandard
 }

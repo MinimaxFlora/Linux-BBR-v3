@@ -8,6 +8,7 @@ import (
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // 调优参数常量（与原脚本一致）。
@@ -28,7 +29,7 @@ const (
 
 // ApplyAPACTuning 应用亚太机器 TCP 调优（原 apply_apac_tuning）。
 func ApplyAPACTuning(ctx context.Context, log execx.Logger) error {
-	log.Logf("正在应用亚太机器 TCP 调优...")
+	log.Logf(i18n.T("apac.applying"))
 
 	if !sysctlSetAll(ctx, log,
 		"net.ipv4.tcp_wmem="+apacWmem,
@@ -36,10 +37,10 @@ func ApplyAPACTuning(ctx context.Context, log execx.Logger) error {
 		"net.ipv4.tcp_limit_output_bytes="+outputBytesDefault,
 		"net.ipv4.tcp_slow_start_after_idle=0",
 	) {
-		log.Logf("✘ 亚太机器 TCP 调优应用失败，请检查当前内核是否支持这些 sysctl 项。")
+		log.Logf(i18n.T("apac.fail"))
 		return fmt.Errorf("亚太 TCP 调优应用失败")
 	}
-	log.Logf("✔ 亚太机器 TCP 调优已立即生效")
+	log.Logf(i18n.T("apac.ok"))
 
 	CleanSmartTuningConf(ctx, log)
 	if err := AppendSysctlConf(ctx, log,
@@ -50,7 +51,7 @@ func ApplyAPACTuning(ctx context.Context, log execx.Logger) error {
 	); err != nil {
 		return err
 	}
-	log.Logf("✔ 亚太机器 TCP 调优已永久写入：%s", bbr.SysctlConfPath)
+	log.Logf(i18n.Tf("apac.saved", bbr.SysctlConfPath))
 	logAPACResult(ctx, log)
 	return nil
 }
@@ -71,10 +72,10 @@ func EnableBBRFQ(ctx context.Context, log execx.Logger) error {
 		"net.core.default_qdisc=fq",
 		"net.ipv4.tcp_congestion_control=bbr",
 	) {
-		log.Logf("✘ BBR + FQ 启用失败，请确认当前内核支持 BBR 和 fq。")
+		log.Logf(i18n.T("smart.enableFail"))
 		return fmt.Errorf("BBR + FQ 启用失败")
 	}
-	log.Logf("✔ 已启用 BBR + FQ")
+	log.Logf(i18n.T("smart.enable"))
 	return nil
 }
 
@@ -123,10 +124,10 @@ func SmartApplyBuffers(ctx context.Context, log execx.Logger, uploadMbps, downlo
 		"net.ipv4.tcp_limit_output_bytes="+outputBytesDefault,
 		"net.ipv4.tcp_slow_start_after_idle=0",
 	) {
-		log.Logf("✘ BBR v3 智能带宽优化应用失败，请检查当前内核是否支持这些 sysctl 项。")
+		log.Logf(i18n.T("smart.applyFail"))
 		return nil, fmt.Errorf("智能带宽优化应用失败")
 	}
-	log.Logf("✔ BBR v3 智能带宽优化已立即生效")
+	log.Logf(i18n.T("smart.applied"))
 
 	CleanSysctlConf(ctx, log)
 	CleanSmartTuningConf(ctx, log)
@@ -143,7 +144,7 @@ func SmartApplyBuffers(ctx context.Context, log execx.Logger, uploadMbps, downlo
 		return nil, err
 	}
 
-	log.Logf("✔ 智能优化配置已永久写入：%s", bbr.SysctlConfPath)
+	log.Logf(i18n.Tf("smart.saved", bbr.SysctlConfPath))
 	res := &BufferResult{
 		RegionLabel:  regionLabel,
 		RTTMS:        rttMS,
@@ -158,11 +159,11 @@ func SmartApplyBuffers(ctx context.Context, log execx.Logger, uploadMbps, downlo
 }
 
 func logSmartResult(ctx context.Context, log execx.Logger, r *BufferResult) {
-	log.Logf("  线路模式：               %s", green(r.RegionLabel))
-	log.Logf("  手动 RTT：                %s ms", green(r.RTTMS))
-	log.Logf("  上传/下载：               %s Mbit/s", green(fmt.Sprintf("%d/%d", r.UploadMbps, r.DownloadMbps)))
-	log.Logf("  推荐缓冲区：             %sMB", green(strconv.Itoa(r.BufferMB)))
-	log.Logf("  内存保护上限：           %sMB", green(strconv.Itoa(r.CapMB)))
+	log.Logf(i18n.Tf("smart.region", green(r.RegionLabel)))
+	log.Logf(i18n.Tf("smart.rtt", green(r.RTTMS)))
+	log.Logf(i18n.Tf("smart.bw", green(fmt.Sprintf("%d/%d", r.UploadMbps, r.DownloadMbps))))
+	log.Logf(i18n.Tf("smart.buffer", green(strconv.Itoa(r.BufferMB))))
+	log.Logf(i18n.Tf("smart.cap", green(strconv.Itoa(r.CapMB))))
 	log.Logf("  队列算法：               %s", green(SysctlGet(ctx, "net.core.default_qdisc")))
 	log.Logf("  拥塞控制：               %s", green(SysctlGet(ctx, "net.ipv4.tcp_congestion_control")))
 	log.Logf("  tcp_wmem:                 %s", green(SysctlGet(ctx, "net.ipv4.tcp_wmem")))
@@ -173,9 +174,9 @@ func logSmartResult(ctx context.Context, log execx.Logger, r *BufferResult) {
 
 // ApplyExtremeTuning 应用疯批模式（原 apply_extreme_speedtest_tuning）。
 func ApplyExtremeTuning(ctx context.Context, log execx.Logger) error {
-	log.Logf("正在应用 BBR v3 疯批模式...")
-	log.Logf("该模式只适合自有链路极限测速，不适合日常使用。")
-	log.Logf("它会优先压榨吞吐，可能显著增加重传、抖动、排队延迟和内存占用。")
+	log.Logf(i18n.T("extreme.doing"))
+	log.Logf(i18n.T("extreme.tip1"))
+	log.Logf(i18n.T("extreme.tip2"))
 
 	if ok, msg := LoadQdiscModule(ctx, log, "fq"); !ok {
 		log.Logf("⚠ %s", msg)
@@ -194,9 +195,9 @@ func ApplyExtremeTuning(ctx context.Context, log execx.Logger) error {
 	// txqueuelen 拉高（原 ip link set dev ... txqueuelen 100000）
 	for _, iface := range DefaultRouteInterfaces(ctx) {
 		if execx.RunOK(ctx, "ip", "link", "set", "dev", iface, "txqueuelen", strconv.Itoa(extremeTxqueuelen)) {
-			log.Logf("✔ 当前网卡 %s 的 txqueuelen 已拉高到 %d", iface, extremeTxqueuelen)
+			log.Logf(i18n.Tf("extreme.txq", iface, extremeTxqueuelen))
 		} else {
-			log.Logf("⚠ 当前网卡 %s 设置 txqueuelen 失败，继续应用 TCP 参数", iface)
+			log.Logf(i18n.Tf("extreme.txqF", iface))
 		}
 	}
 
@@ -208,10 +209,10 @@ func ApplyExtremeTuning(ctx context.Context, log execx.Logger) error {
 		"net.ipv4.tcp_limit_output_bytes="+strconv.Itoa(extremeOutputBytes),
 		"net.ipv4.tcp_slow_start_after_idle=0",
 	) {
-		log.Logf("✘ 疯批模式核心参数应用失败，请检查当前内核是否支持这些 sysctl 项。")
+		log.Logf(i18n.T("extreme.coreF"))
 		return fmt.Errorf("疯批模式核心参数应用失败")
 	}
-	log.Logf("✔ 核心极限测速参数已立即生效")
+	log.Logf(i18n.T("extreme.core"))
 
 	// 附加参数：失败静默忽略
 	for _, kv := range []string{
@@ -257,7 +258,7 @@ func ApplyExtremeTuning(ctx context.Context, log execx.Logger) error {
 		return err
 	}
 
-	log.Logf("✔ 疯批模式配置已永久写入：%s", bbr.SysctlConfPath)
+	log.Logf(i18n.Tf("extreme.saved", bbr.SysctlConfPath))
 	logExtremeResult(ctx, log)
 	return nil
 }
@@ -273,16 +274,16 @@ func logExtremeResult(ctx context.Context, log execx.Logger) {
 
 // ClearNetworkOptimizations 清空本程序写入的网络优化配置（原 clear_network_optimizations）。
 func ClearNetworkOptimizations(ctx context.Context, log execx.Logger) error {
-	log.Logf("正在清空本程序写入的网络优化配置...")
+	log.Logf(i18n.T("clear.doing"))
 	CleanSysctlConf(ctx, log)
 	CleanSmartTuningConf(ctx, log)
 	_ = removeFile(ctx, bbr.ModulesLoadConfPath)
 	ReloadSysctl(ctx)
 
-	log.Logf("✔ 已清空网络优化持久配置")
-	log.Logf("  已清理：%s 中的 BBR/qdisc/TCP buffer 参数", bbr.SysctlConfPath)
-	log.Logf("  已删除：%s", bbr.ModulesLoadConfPath)
-	log.Logf("  当前运行态参数可能要到重启后完全恢复为系统默认值。")
+	log.Logf(i18n.T("clear.done"))
+	log.Logf(i18n.Tf("clear.cleaned", bbr.SysctlConfPath))
+	log.Logf(i18n.Tf("clear.deleted", bbr.ModulesLoadConfPath))
+	log.Logf(i18n.T("clear.note"))
 	return nil
 }
 

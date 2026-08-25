@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // View 渲染当前页面。
@@ -14,6 +14,8 @@ func (m Model) View() string {
 		return m.viewBoot()
 	case PageMenu:
 		return m.viewMenu()
+	case PageQdisc:
+		return m.viewQdisc()
 	case PageProfile:
 		return m.viewProfile()
 	case PageConfirm:
@@ -32,53 +34,79 @@ func (m Model) View() string {
 
 // viewBoot 启动任务页。
 func (m Model) viewBoot() string {
-	lines := []string{
-		"",
-		titleStyle.Render("(☆ω☆)✧*｡ 欢迎来到 BBR 管理脚本世界哒！ ✧*｡(☆ω☆)"),
-		"",
-		separator,
-		cyan("正在初始化：安装快捷命令 + 应用安全缓解策略..."),
-		"",
-	}
-	for _, l := range m.logs {
-		lines = append(lines, colorizeLog(l))
-	}
-	lines = append(lines, "", m.spinner.View()+dim(" 请稍候..."))
-	return strings.Join(lines, "\n")
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(
+		cyan(i18n.T("boot.init")) + "\n\n" +
+			strings.Join(logsColored(m.logs), "\n") + "\n\n" +
+			m.spinner.View()+" "+dim(i18n.T("boot.waiting")),
+	))
+	return b.String()
 }
 
 // viewMenu 主菜单页。
 func (m Model) viewMenu() string {
 	env := currentEnv()
+
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(titleStyle.Render("(☆ω☆)✧*｡ 欢迎来到 BBR 管理脚本世界哒！ ✧*｡(☆ω☆)"))
-	b.WriteString("\n")
-	b.WriteString(separator)
-	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("%s%s\n", cyan("当前 TCP 拥塞控制算法："), green(env.CurrentAlgo)))
-	b.WriteString(fmt.Sprintf("%s%s\n", cyan("当前队列管理算法：    "), green(env.CurrentQdisc)))
-	b.WriteString(separator)
-	b.WriteString("\n")
-	b.WriteString(yellow(fmt.Sprintf("作者：MinimaxFlora  |  项目：%s", "github.com/"+bbr.RepoFullName())))
-	b.WriteString("\n")
-	b.WriteString(separator)
-	b.WriteString("\n")
-	b.WriteString(headerStyle.Render("╭( ･ㅂ･)و ✧ 你可以选择以下操作哦："))
-	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
 
+	// 状态栏：TCP 算法 / 队列 / 内核
+	status := fmt.Sprintf(
+		"  %s  %s     %s  %s     %s  %s",
+		badgeStyle.Render(i18n.T("menu.algo")), green(env.CurrentAlgo),
+		badgeStyle.Render(i18n.T("menu.qdisc")), green(env.CurrentQdisc),
+		badgeStyle.Render(i18n.T("menu.kernel")), cyan(kernelVersionHint()),
+	)
+	b.WriteString(cardStyle.Render(status))
+	b.WriteString("\n\n")
+
+	// 菜单卡片
+	var items strings.Builder
+	items.WriteString(headerStyle.Render(i18n.T("menu.choose")) + "\n\n")
 	for i, it := range menuItems {
-		label := it.num + ". " + it.icon + " " + it.label
+		label := it.num + ". " + it.icon + " " + i18n.T(it.labelKey)
 		if i == m.menuCursor {
-			b.WriteString("  " + selectedItemStyle.Render("▸ "+label))
+			items.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			b.WriteString("  " + itemStyle.Render("  "+label))
+			items.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
-		b.WriteString("\n")
 	}
-	b.WriteString(separator)
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
+	b.WriteString("\n\n")
+
+	// 页脚：作者 + 项目
+	b.WriteString(footer())
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(i18n.T("menu.help")))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("↑/↓ 选择  ·  数字键 1-12 直接执行  ·  Enter 确认  ·  q 退出"))
+	return b.String()
+}
+
+// viewQdisc 队列算法子菜单（原菜单 4-7）。
+func (m Model) viewQdisc() string {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(headerStyle.Render("⚡ "+i18n.T("qdisc.title")) + "\n\n"))
+	var items strings.Builder
+	for i, opt := range qdiscOptions {
+		label := opt.num + ". " + i18n.T(opt.labelKey)
+		if i == m.qdiscCursor {
+			items.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+		} else {
+			items.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+		}
+	}
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(i18n.T("qdisc.help")))
+	b.WriteString("\n")
 	return b.String()
 }
 
@@ -86,61 +114,73 @@ func (m Model) viewMenu() string {
 func (m Model) viewProfile() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(headerStyle.Render("请选择要安装的内核类型："))
+	b.WriteString(header())
 	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(headerStyle.Render(i18n.T("profile.title")) + "\n\n"))
 	items := []struct {
 		num     string
-		label   string
-		warning string
+		labelKey string
+		warnKey  string
 	}{
-		{"1", "BBR v3 标准版（推荐日常使用）", ""},
-		{"2", "BBR v3 Max 激进吞吐版（自有链路测速实验）", "警告：BBR v3 Max 会提高探测和窗口策略的进攻性，但仍保留 loss/ECN/inflight 反馈闭环；只适合自有链路吞吐测试，不建议日常生产使用。"},
+		{"1", "profile.item1", ""},
+		{"2", "profile.item2", "profile.warn"},
 	}
+	var list strings.Builder
 	for i, it := range items {
-		label := it.num + ". " + it.label
+		label := it.num + ". " + i18n.T(it.labelKey)
 		if i == m.profileCursor {
-			b.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			list.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			b.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			list.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
-		if i == 1 && m.profileCursor == 1 {
-			b.WriteString("\n  " + yellow(it.warning) + "\n")
+		if i == 1 && m.profileCursor == 1 && it.warnKey != "" {
+			list.WriteString("\n  " + yellow(i18n.T(it.warnKey)) + "\n")
 		}
 	}
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(list.String(), "\n")))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(i18n.T("profile.help")))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("↑/↓ 选择  ·  Enter 确认  ·  Esc 返回  ·  q 退出"))
 	return b.String()
 }
 
 // viewConfirm 确认页。
 func (m Model) viewConfirm() string {
-	lines := []string{"\n", yellow("╭( ･ㅂ･)و ✧ 确认操作"), "\n"}
-	parts := strings.Split(m.confirmPrompt, "\n")
-	for _, p := range parts {
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
+	var lines []string
+	lines = append(lines, yellow(i18n.T("confirm.title")))
+	for _, p := range strings.Split(m.confirmPrompt, "\n") {
 		lines = append(lines, cyan(p))
 	}
-	lines = append(lines, "", yellow("请确认 (y/n): "), "",
-		helpStyle.Render("y/Enter 确认  ·  n/Esc 取消"))
-	return strings.Join(lines, "\n")
+	lines = append(lines, "", yellow(i18n.T("confirm.prompt")))
+	b.WriteString(cardStyle.Render(strings.Join(lines, "\n")))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(i18n.T("confirm.help")))
+	b.WriteString("\n")
+	return b.String()
 }
 
 // viewInput 输入页。
 func (m Model) viewInput() string {
 	var b strings.Builder
 	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
+	var lines []string
 	for _, p := range strings.Split(m.inputPrompt, "\n") {
-		b.WriteString(cyan(p))
-		b.WriteString("\n")
+		lines = append(lines, cyan(p))
 	}
-	b.WriteString("\n")
-	b.WriteString(m.input.View())
-	b.WriteString("\n")
+	lines = append(lines, "", m.input.View())
 	if m.inputErr != "" {
-		b.WriteString(red("✘ " + m.inputErr))
-		b.WriteString("\n")
+		lines = append(lines, red("✘ "+m.inputErr))
 	}
+	b.WriteString(cardStyle.Render(strings.Join(lines, "\n")))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(i18n.T("input.help")))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("Enter 提交  ·  Esc 返回主菜单"))
 	return b.String()
 }
 
@@ -148,9 +188,9 @@ func (m Model) viewInput() string {
 func (m Model) viewVersion() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(headerStyle.Render("以下为适用于当前架构的版本："))
+	b.WriteString(header())
 	b.WriteString("\n\n")
-	// 可视窗口：最多显示 12 行
+	b.WriteString(cardStyle.Render(headerStyle.Render(i18n.T("version.title")) + "\n\n"))
 	start := 0
 	if len(m.tags) > 12 {
 		start = m.tagCursor - 6
@@ -161,19 +201,22 @@ func (m Model) viewVersion() string {
 			start = len(m.tags) - 12
 		}
 	}
+	var list strings.Builder
 	for i := start; i < len(m.tags) && i < start+12; i++ {
 		label := fmt.Sprintf("%2d. %s", i+1, m.tags[i])
 		if i == m.tagCursor {
-			b.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			list.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			b.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			list.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
 	}
 	if len(m.tags) > 12 {
-		b.WriteString(dim(fmt.Sprintf("  （共 %d 个版本）", len(m.tags))) + "\n")
+		list.WriteString(dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))) + "\n")
 	}
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(list.String(), "\n")))
+	b.WriteString("\n\n")
+	b.WriteString(helpStyle.Render(i18n.T("version.help")))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("↑/↓ 选择  ·  数字键直接选择  ·  Enter 安装  ·  Esc 返回"))
 	return b.String()
 }
 
@@ -181,13 +224,13 @@ func (m Model) viewVersion() string {
 func (m Model) viewLog() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(titleStyle.Render(m.logTitle))
-	b.WriteString("\n")
-	b.WriteString(separator)
-	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(titleStyle.Render(m.logTitle)))
+	b.WriteString("\n\n")
 
 	// 计算可见日志窗口
-	visible := m.height - 8
+	visible := m.height - 14
 	if visible < 5 {
 		visible = 5
 	}
@@ -199,23 +242,25 @@ func (m Model) viewLog() string {
 	if to > len(m.logs) {
 		to = len(m.logs)
 	}
+	var body strings.Builder
 	if len(m.logs) == 0 {
-		b.WriteString(dim("（无输出）"))
-		b.WriteString("\n")
+		body.WriteString(dim("（…）"))
 	} else {
 		for _, l := range m.logs[from:to] {
-			b.WriteString(colorizeLog(l))
-			b.WriteString("\n")
+			body.WriteString(colorizeLog(l))
+			body.WriteString("\n")
 		}
 	}
-	b.WriteString(separator)
-	b.WriteString("\n")
-	b.WriteString(m.spinner.View() + dim(" 执行中...  "))
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
+	b.WriteString("\n\n")
+	status := m.spinner.View() + " " + dim(i18n.T("log.running"))
 	if !m.logAuto {
-		b.WriteString(dim(fmt.Sprintf("（已暂停自动滚动，第 %d/%d 行）", m.logScroll+1, len(m.logs))))
+		status += dim(fmt.Sprintf(i18n.T("log.scroll"), m.logScroll+1, len(m.logs)))
 	}
+	b.WriteString(status)
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("↑/↓ 滚动  ·  End 恢复自动滚动  ·  q 退出"))
+	b.WriteString(helpStyle.Render(i18n.T("log.help")))
+	b.WriteString("\n")
 	return b.String()
 }
 
@@ -223,32 +268,44 @@ func (m Model) viewLog() string {
 func (m Model) viewResult() string {
 	var b strings.Builder
 	b.WriteString("\n")
+	b.WriteString(header())
+	b.WriteString("\n\n")
+	title := m.resultTitle
 	if m.taskErr != nil {
-		b.WriteString(red(m.resultTitle))
+		title = red(title)
 	} else {
-		b.WriteString(green(m.resultTitle))
+		title = green(title)
 	}
-	b.WriteString("\n")
-	b.WriteString(separator)
-	b.WriteString("\n")
+	b.WriteString(cardStyle.Render(title))
+	b.WriteString("\n\n")
 
-	// 展示最近日志（最后 15 行）
 	start := len(m.logs) - 15
 	if start < 0 {
 		start = 0
 	}
+	var body strings.Builder
 	for _, l := range m.logs[start:] {
-		b.WriteString(colorizeLog(l))
-		b.WriteString("\n")
+		body.WriteString(colorizeLog(l))
+		body.WriteString("\n")
 	}
 	if m.taskErr != nil {
-		b.WriteString(red("✘ " + m.taskErr.Error()))
-		b.WriteString("\n")
+		body.WriteString(red("✘ " + m.taskErr.Error()))
+		body.WriteString("\n")
 	}
-	b.WriteString(separator)
-	b.WriteString("\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
+	b.WriteString("\n\n")
 	b.WriteString(yellow(m.resultExtra))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render("Enter 返回主菜单  ·  q 退出"))
+	b.WriteString(helpStyle.Render(i18n.T("result.enter") + "  ·  " + i18n.T("result.quit")))
+	b.WriteString("\n")
 	return b.String()
+}
+
+// logsColored 着色日志行。
+func logsColored(logs []string) []string {
+	out := make([]string, 0, len(logs))
+	for _, l := range logs {
+		out = append(out, colorizeLog(l))
+	}
+	return out
 }

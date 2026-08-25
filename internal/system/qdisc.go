@@ -6,6 +6,7 @@ import (
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // LoadQdiscModule 检查并加载队列算法模块（对应原脚本 load_qdisc_module）。
@@ -30,7 +31,7 @@ func LoadQdiscModule(ctx context.Context, log execx.Logger, qdiscName string) (b
 		}
 	}
 
-	log.Logf("正在加载内核模块 %s...", moduleName)
+	log.Logf(i18n.Tf("qdisc.loading", moduleName))
 	if execx.RunOK(ctx, "modprobe", moduleName) {
 		if execx.RunOK(ctx, "sysctl", "-w", "net.core.default_qdisc="+qdiscName) {
 			applied := SysctlGet(ctx, "net.core.default_qdisc")
@@ -38,12 +39,12 @@ func LoadQdiscModule(ctx context.Context, log execx.Logger, qdiscName string) (b
 				_ = execx.RunOK(ctx, "sysctl", "-w", "net.core.default_qdisc="+previousQdisc)
 			}
 			if applied == qdiscName {
-				log.Logf("✔ 队列算法 %s 可用", qdiscName)
+				log.Logf(i18n.Tf("qdisc.available", qdiscName))
 				return true, ""
 			}
 		}
 	}
-	return false, "队列算法 " + qdiscName + " 不可用，可能当前内核缺少 " + moduleName
+	return false, i18n.Tf("qdisc.unavail", qdiscName, moduleName)
 }
 
 // moduleLoaded 检查模块是否已加载（lsmod 精确匹配）。
@@ -63,12 +64,12 @@ func EnsureIPRoute2(ctx context.Context, log execx.Logger) bool {
 	if execx.HasCommand("ip") && execx.HasCommand("tc") {
 		return true
 	}
-	log.Logf("正在安装 iproute2，用于立即切换当前网卡队列算法...")
+	log.Logf(i18n.T("qdisc.iproute2"))
 	_ = execx.RunOK(ctx, "apt-get", "update")
 	if execx.RunOK(ctx, "apt-get", "install", "-y", "iproute2") {
 		return true
 	}
-	log.Logf("⚠ iproute2 安装失败，当前网卡队列无法立即替换；仍会写入 default_qdisc。")
+	log.Logf(i18n.T("qdisc.iproute2F"))
 	return false
 }
 
@@ -100,15 +101,15 @@ func ApplyQdiscToActiveInterfaces(ctx context.Context, log execx.Logger, qdiscNa
 	}
 	ifaces := DefaultRouteInterfaces(ctx)
 	if len(ifaces) == 0 {
-		log.Logf("⚠ 未找到默认路由出口网卡，已仅设置 default_qdisc。")
+		log.Logf(i18n.T("qdisc.noIface"))
 		return false, false
 	}
 	for _, iface := range ifaces {
 		if execx.RunOK(ctx, "tc", "qdisc", "replace", "dev", iface, "root", qdiscName) {
-			log.Logf("✔ 当前网卡 %s 已切换为 %s", iface, qdiscName)
+			log.Logf(i18n.Tf("qdisc.ifaceOk", iface, qdiscName))
 			applied = true
 		} else {
-			log.Logf("⚠ 当前网卡 %s 切换 %s 失败", iface, qdiscName)
+			log.Logf(i18n.Tf("qdisc.ifaceFail", iface, qdiscName))
 			failed = true
 		}
 	}
@@ -121,15 +122,15 @@ func PersistQdiscModule(ctx context.Context, log execx.Logger, qdiscName string)
 	moduleName := "sch_" + strings.ReplaceAll(qdiscName, "-", "_")
 	if qdiscName == "fq" {
 		_ = removeFile(ctx, bbr.ModulesLoadConfPath)
-		log.Logf("(☆^ー^☆) 更改已永久保存啦~")
+		log.Logf(i18n.T("qdisc.persist1"))
 		return
 	}
 	modinfoOK := execx.RunOK(ctx, "modinfo", moduleName)
 	if modinfoOK || moduleLoaded(ctx, moduleName) {
 		_ = writeFile(ctx, bbr.ModulesLoadConfPath, moduleName+"\n", 0o644)
-		log.Logf("(☆^ー^☆) 更改已永久保存，模块 %s 将在开机时自动加载~", moduleName)
+		log.Logf(i18n.Tf("qdisc.persist2", moduleName))
 	} else {
 		_ = removeFile(ctx, bbr.ModulesLoadConfPath)
-		log.Logf("(☆^ー^☆) 更改已永久保存；%s 可能为内置队列，无需写入模块加载配置~", qdiscName)
+		log.Logf(i18n.Tf("qdisc.persist3", qdiscName))
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"os/exec"
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/app"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/system"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -39,6 +40,9 @@ func main() {
 
 	ctx := context.Background()
 
+	// 初始化语言（环境变量 BBRV3_LANG / /etc/bbrv3/lang）
+	i18n.Init()
+
 	// 开发模式：跳过 Debian/apt/架构检查，便于在非 Linux 机器预览 TUI。
 	devMode := os.Getenv("BBRV3_DEV") == "1"
 
@@ -67,6 +71,7 @@ func main() {
 		}
 	}
 	app.SetEnv(env)
+	app.SetKernelVersion(env.Arch + " / " + system.KernelRelease())
 
 	// 启动 TUI
 	p := tea.NewProgram(app.NewModel(ctx, env), tea.WithAltScreen())

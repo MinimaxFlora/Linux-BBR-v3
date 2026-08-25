@@ -30,8 +30,9 @@ jobs:
       - name: 构建二进制
         run: |
           set -euo pipefail
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o bbrv3-linux-amd64 .
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o bbrv3-linux-arm64 .
+          LDFLAGS="-s -w -X github.com/MinimaxFlora/Linux-BBR-v3/internal/app.Version=v1.0.0 -X github.com/MinimaxFlora/Linux-BBR-v3/internal/app.Commit=${GITHUB_SHA::8}"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="$LDFLAGS" -o bbrv3-linux-amd64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="$LDFLAGS" -o bbrv3-linux-arm64 .
 
       - name: 发布或更新 bbrv3-cli release
         env:

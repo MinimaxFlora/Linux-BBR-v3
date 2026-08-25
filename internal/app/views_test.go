@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/system"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,11 +38,12 @@ func press(m Model, msg tea.KeyMsg) Model {
 }
 
 func TestMenuViewContainsAllItems(t *testing.T) {
+	i18n.Set(i18n.Zh)
 	m := testModel()
 	v := m.View()
 	for _, it := range menuItems {
-		if !strings.Contains(v, it.label) {
-			t.Errorf("主菜单缺少选项: %s", it.label)
+		if !strings.Contains(v, i18n.T(it.labelKey)) {
+			t.Errorf("主菜单缺少选项: %s", i18n.T(it.labelKey))
 		}
 	}
 	// 系统状态显示
@@ -51,6 +53,24 @@ func TestMenuViewContainsAllItems(t *testing.T) {
 	// 品牌信息
 	if !strings.Contains(v, "MinimaxFlora") {
 		t.Error("主菜单应显示 MinimaxFlora 品牌")
+	}
+	// 版本信息
+	if !strings.Contains(v, Version) {
+		t.Error("主菜单应显示版本号")
+	}
+	// 菜单应为 9 项（4-7 已合并）
+	if len(menuItems) != 9 {
+		t.Errorf("菜单应为 9 项, got %d", len(menuItems))
+	}
+}
+
+func TestMenuEnglish(t *testing.T) {
+	i18n.Set(i18n.En)
+	defer i18n.Set(i18n.Zh)
+	m := testModel()
+	v := m.View()
+	if !strings.Contains(v, "Install or update") {
+		t.Error("英文模式应显示英文菜单")
 	}
 }
 
@@ -87,16 +107,35 @@ func TestMenuNumberKeyOpensProfile(t *testing.T) {
 	}
 }
 
-func TestQdiscMenuSetsValues(t *testing.T) {
+func TestQdiscSubmenu(t *testing.T) {
 	m := testModel()
-	// 数字键 4 → BBR + FQ
+	// 数字键 4 → 队列算法子菜单
 	m = press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'4'}})
+	if m.page != PageQdisc {
+		t.Fatalf("按 4 应进入队列算法子菜单, got page=%d", m.page)
+	}
+	// 选 1 (FQ) → 任务日志页
+	m = press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
 	if m.page != PageLog {
-		t.Fatalf("按 4 应进入任务日志页, got page=%d", m.page)
+		t.Fatalf("子菜单选 1 应进入任务日志页, got page=%d", m.page)
+	}
+}
+
+func TestLanguageToggle(t *testing.T) {
+	i18n.Set(i18n.Zh)
+	m := testModel()
+	m = press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	if !i18n.IsEn() {
+		t.Error("按 L 应切换到英文")
+	}
+	m = press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'L'}})
+	if i18n.IsEn() {
+		t.Error("再按 L 应切回中文")
 	}
 }
 
 func TestConfirmAndInputViews(t *testing.T) {
+	i18n.Set(i18n.Zh)
 	m := testModel()
 	m, _ = m.askConfirm("测试确认 (y/n)", nil, nil)
 	v := m.View()
@@ -113,7 +152,7 @@ func TestConfirmAndInputViews(t *testing.T) {
 func TestResultViewShowsLog(t *testing.T) {
 	m := testModel()
 	m.logs = []string{"✔ 某操作成功", "第二行"}
-	m, _ = m.showResult("✔ 完成", "按 Enter 返回")
+	m, _ = m.showResult("✔ 完成", "按 Enter 返回主菜单")
 	v := m.View()
 	if !strings.Contains(v, "✔ 完成") {
 		t.Error("结果页应显示标题")

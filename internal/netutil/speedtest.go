@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // OoklaSpeedtestVersion 固定安装的 Ookla 官方 CLI 版本（与原脚本一致）。
@@ -58,7 +59,7 @@ func RemoveSpeedtestCLI(ctx context.Context, log execx.Logger) {
 	if pathOut != "" && !IsOoklaSpeedtest(pathOut) {
 		versionOut := execx.TryOutput(ctx, strings.TrimSpace(pathOut), "--version")
 		if strings.Contains(strings.ToLower(versionOut), "speedtest-cli") || strings.Contains(strings.ToLower(versionOut), "python") {
-			log.Logf("检测到非 Ookla 官方 speedtest，正在移除 speedtest-cli...")
+			log.Logf(i18n.T("smart.removeCli"))
 			_ = execx.RunOK(ctx, "apt-get", "remove", "--purge", "-y", "speedtest-cli")
 		}
 		if pathOut != speedtestInstallPath {
@@ -67,7 +68,7 @@ func RemoveSpeedtestCLI(ctx context.Context, log execx.Logger) {
 	}
 	// dpkg 中残留的 speedtest-cli 包
 	if dpkgInstalled(ctx, "speedtest-cli") {
-		log.Logf("检测到 speedtest-cli 软件包，正在移除...")
+		log.Logf(i18n.T("smart.removePkg"))
 		_ = execx.RunOK(ctx, "apt-get", "remove", "--purge", "-y", "speedtest-cli")
 	}
 }
@@ -89,7 +90,7 @@ func InstallOoklaSpeedtest(ctx context.Context, log execx.Logger, arch string) e
 	if err != nil {
 		return err
 	}
-	log.Logf("正在安装 Ookla speedtest %s...", OoklaSpeedtestVersion)
+	log.Logf(i18n.Tf("smart.installOokla", OoklaSpeedtestVersion))
 
 	tmpDir, err := os.MkdirTemp("", "bbrv3-speedtest-")
 	if err != nil {
@@ -112,7 +113,7 @@ func InstallOoklaSpeedtest(ctx context.Context, log execx.Logger, arch string) e
 	if !IsOoklaSpeedtest(speedtestInstallPath) {
 		return fmt.Errorf("Ookla speedtest 安装后校验失败")
 	}
-	log.Logf("✔ Ookla speedtest %s 安装完成", OoklaSpeedtestVersion)
+	log.Logf(i18n.Tf("smart.ooklaDone", OoklaSpeedtestVersion))
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 )
 
 // getenv 读取环境变量。
@@ -56,7 +57,7 @@ chmod +x "$BIN"
 `, bbr.BinaryAssetBase, bbr.BinaryAssetBase, bbr.BinaryAssetBase, bbr.RepoFullName())
 
 	if err := writeFile(ctx, bbr.QuickCommandPath, script, 0o755); err != nil {
-		log.Logf("提示：快捷命令 b 安装失败，不影响当前运行。")
+		log.Logf(i18n.T("sys.quickFail"))
 		return err
 	}
 	return nil

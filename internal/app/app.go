@@ -8,6 +8,7 @@ import (
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/system"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -22,6 +23,7 @@ type Page int
 const (
 	PageBoot Page = iota // 启动任务（快捷命令 + 安全缓解）
 	PageMenu
+	PageQdisc   // 队列算法选择（原菜单 4-7 合并）
 	PageProfile // 内核类型选择
 	PageConfirm // y/n 确认
 	PageInput   // 文本/数字输入
@@ -100,6 +102,9 @@ type Model struct {
 	profileCursor int
 	profileCB     func(bbr.Profile) (Model, tea.Cmd)
 
+	// 队列算法选择
+	qdiscCursor int
+
 	// 版本选择
 	tags     []string
 	tagCursor int
@@ -162,7 +167,7 @@ func (m Model) startBoot() tea.Cmd {
 			// 快捷命令失败不阻断（原脚本同）
 		}
 		if err := system.ApplySecurityMitigations(ctx, logger); err != nil {
-			ch <- taskEvent{line: fmt.Sprintf("安全策略应用失败：%v", err)}
+			ch <- taskEvent{line: i18n.Tf("sec.applyFail", err)}
 		}
 		ch <- taskEvent{done: true}
 		close(ch)
@@ -370,7 +375,7 @@ func minInt(a, b int) int {
 // MenuLabel 返回主菜单项标签（供测试/日志）。
 func MenuLabel(i int) string {
 	if i >= 0 && i < len(menuItems) {
-		return menuItems[i].label
+		return i18n.T(menuItems[i].labelKey)
 	}
 	return ""
 }
