@@ -1,0 +1,9 @@
+# 编译产物
+bbrv3
+bbrv3.exe
+bbrv3-linux-*
+*.exe
+
+# 测试/临时
+*.test
+*.out
