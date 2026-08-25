@@ -1,15 +1,15 @@
 name: 清理旧的工作流运行记录
 
-# 删除各 workflow 过旧的运行记录，保留最近 N 次（默认 20，按每个 workflow 分别计）。
-# 手动触发：Actions 页面 Run workflow，或 gh workflow run cleanup-runs.yml -f keep=30
+# 删除各 workflow 已结束的运行记录，默认全部删除（保留正在运行的）。
+# 手动触发：Actions 页面 Run workflow，或 gh workflow run cleanup-runs.yml -f keep=5
 # 定时触发：每天 04:00（内核自动构建 03:17 之后）自动清理。
 on:
   workflow_dispatch:
     inputs:
       keep:
-        description: 保留最近多少次运行（按每个 workflow 分别计）
+        description: 保留最近多少次运行（0 = 全部删除，仅保留正在运行的；按每个 workflow 分别计）
         required: false
-        default: "20"
+        default: "0"
         type: number
   schedule:
     - cron: "0 4 * * *"
@@ -34,12 +34,12 @@ jobs:
           set -euo pipefail
           REPO="${{ github.repository }}"
 
-          # workflow_dispatch 输入（字符串）或 schedule 触发时的空值 → 兜底 20
-          KEEP="${KEEP:-20}"
-          if ! [[ "$KEEP" =~ ^[0-9]+$ ]] || [ "$KEEP" -lt 1 ]; then
-            KEEP=20
+          # workflow_dispatch 输入（字符串）或 schedule 触发时的空值 → 兜底 0（全部删除）
+          KEEP="${KEEP:-0}"
+          if ! [[ "$KEEP" =~ ^[0-9]+$ ]]; then
+            KEEP=0
           fi
-          echo "保留策略：每个 workflow 最近 $KEEP 次运行"
+          echo "保留策略：每个 workflow 最近 $KEEP 次运行（0 = 全部删除，仅保留运行中的）"
 
           for wf_id in $(gh api "repos/$REPO/actions/workflows" --paginate --jq '.workflows[].id'); do
             echo "== workflow $wf_id =="
