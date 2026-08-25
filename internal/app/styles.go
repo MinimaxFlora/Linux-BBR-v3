@@ -63,10 +63,10 @@ var (
 			Background(lipgloss.Color(brandPink)).
 			Padding(0, 1)
 
-	// 内容卡片（紫色圆角边框）
+	// 内容卡片（圆角深紫边框，白色终端下也清晰）
 	cardStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#4c3a8f")).
+			BorderForeground(lipgloss.Color("#5b21b6")).
 			Padding(0, 2)
 
 	// 卡片标题

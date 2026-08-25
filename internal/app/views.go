@@ -90,9 +90,9 @@ func (m Model) viewMenu() string {
 	infoSegs := [][]string{
 		{dim("✧  ") + bold(i18n.T("boot.title"))},
 		{
-			pink("◈  ") + dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
-			cyan("📝  ") + dim(i18n.T("menu.blog")+"：") + itemStyle.Render(i18n.T("menu.blogUrl")),
-			cyan("◆  ") + dim(i18n.T("menu.repoLabel")+"：") + itemStyle.Render(i18n.T("menu.repoUrl")),
+			dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
+			dim(i18n.T("menu.blog")+"：") + itemStyle.Render(i18n.T("menu.blogUrl")),
+			dim(i18n.T("menu.repoLabel")+"：") + itemStyle.Render(i18n.T("menu.repoUrl")),
 		},
 		status,
 	}
