@@ -63,6 +63,13 @@ apply_policy_config() {
   scripts/config --disable INET6_ESP
   scripts/config --disable AF_RXRPC
   scripts/config --disable RXKAD
+
+  # Linux 7.2.0 上游 Kconfig bug：AD4130/AD7779 改用 devm_iio_triggered_buffer_setup()
+  # 但 Kconfig 缺少 'select IIO_TRIGGERED_BUFFER'，启用这两个驱动会链接失败。
+  # （上游修复补丁 "iio: adc: add missing 'select IIO_TRIGGERED_BUFFER'" 未进入 7.2.0；
+  #   VPS 不需要工业 ADC 驱动，直接禁用。上游修复后可移除。）
+  scripts/config --disable AD4130
+  scripts/config --disable AD7779
 }
 
 require_config_line() {
