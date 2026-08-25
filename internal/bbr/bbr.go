@@ -32,8 +32,8 @@ const (
 	MaxVersionSuffix      = "-" + KernelBrand + "-" + KernelTag + "-max"
 
 	// 持久化配置文件路径（原 99-joeyblog.conf / joeyblog-qdisc.conf / 99-joeyblog-security.conf）
-	SysctlConfPath          = "/etc/sysctl.d/99-minimaxflora.conf"
-	ModulesLoadConfPath     = "/etc/modules-load.d/minimaxflora-qdisc.conf"
+	SysctlConfPath           = "/etc/sysctl.d/99-minimaxflora.conf"
+	ModulesLoadConfPath      = "/etc/modules-load.d/minimaxflora-qdisc.conf"
 	SecurityModprobeConfPath = "/etc/modprobe.d/99-minimaxflora-security.conf"
 
 	// 仓库与发布信息
@@ -203,6 +203,26 @@ func VersionFromTag(tag string) string {
 	v := strings.TrimPrefix(tag, "x86_64-")
 	v = strings.TrimPrefix(v, "arm64-")
 	return strings.TrimSuffix(v, "-max")
+}
+
+// KernelAssetNames 构造内核 release 的 .deb 资产名列表（与 build.yml 的
+// bindeb-pkg 产物一致）：linux-headers / linux-image 两个包。
+// version 为 tag 中的内核版本（如 "7.2.0"）；arch 为 tag 架构（x86_64/arm64）；
+// max 为 Max 版。用于 API 降级（atom 无资产信息）时按命名规则构造下载 URL。
+func KernelAssetNames(version, arch string, max bool) []string {
+	debArch := arch
+	if arch == "x86_64" {
+		debArch = "amd64"
+	}
+	suffix := StandardVersionSuffix
+	if max {
+		suffix = MaxVersionSuffix
+	}
+	base := version + suffix + "_" + version + "-1_" + debArch + ".deb"
+	return []string{
+		"linux-headers-" + base,
+		"linux-image-" + base,
+	}
 }
 
 var debugAssetRe = regexp.MustCompile(`(?i)(-dbg_|-dbgsym_)`)

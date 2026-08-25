@@ -60,7 +60,12 @@ func SetMirror(v string) error {
 }
 
 // candidateURLs 按当前配置生成尝试的 URL 列表（直连 + 镜像）。
+// 注意：api.github.com 无法被 ghproxy 类镜像代理（实测 403/404），
+// 只保留直连；国内降级走 github.com 域端点（releases.atom / commits.atom，镜像可代理）。
 func candidateURLs(raw string) []string {
+	if strings.HasPrefix(raw, "https://api.github.com/") {
+		return []string{raw}
+	}
 	switch mode := CurrentMirror(); mode {
 	case MirrorDirect:
 		return []string{raw}

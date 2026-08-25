@@ -2,7 +2,11 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -562,10 +566,18 @@ func menuCheckUpdate(m Model) (Model, tea.Cmd) {
 			return m.showResult(i18n.T("update.devTitle"), i18n.Tf("update.devMsg", remoteCommit))
 		}
 		if !hasUpdate {
+			if remoteCommit == "" {
+				// 镜像比对降级：无 commit 信息
+				return m.showResult(i18n.T("update.latestTitle"), i18n.T("update.latestMirrorMsg"))
+			}
 			return m.showResult(i18n.T("update.latestTitle"), i18n.Tf("update.latestMsg", remoteCommit))
 		}
 		// 有更新：确认后直接在 TUI 内下载安装
-		return m.askConfirm(i18n.Tf("update.confirmAsk", remoteCommit),
+		prompt := i18n.Tf("update.confirmAsk", remoteCommit)
+		if remoteCommit == "" {
+			prompt = i18n.T("update.confirmAskMirror")
+		}
+		return m.askConfirm(prompt,
 			func(m Model) (Model, tea.Cmd) { return m.startSelfUpdate(assetName) },
 			func(m Model) (Model, tea.Cmd) {
 				return m.showResult(i18n.T("update.skippedTitle"), i18n.T("update.skippedMsg"))
@@ -578,11 +590,13 @@ func menuCheckUpdate(m Model) (Model, tea.Cmd) {
 // master 分支最新 commit。bbrv3-cli 为固定 tag（tag 指针只在创建时固定，
 // 之后 push 仅覆盖上传资产），tag 指向的 commit 无法反映最新二进制，
 // 而 release-cli 由 push master 触发构建，master head 才是最新版本基准。
+// API 不可用时（如国内网络）降级为直接下载最新二进制与本地比对。
 func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string, hasUpdate bool, err error) {
 	log.Logf(i18n.T("update.checking"))
 	releases, err := fetchReleases(ctx, log)
 	if err != nil {
-		return "", false, err
+		// API 不可用：降级（下载比对走镜像，国内可用）
+		return checkTUIUpdateByDownload(ctx, log)
 	}
 	var found bool
 	for _, r := range releases {
@@ -614,6 +628,77 @@ func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string,
 		log.Logf(i18n.T("update.latest"))
 	}
 	return remote, hasUpdate, nil
+}
+
+// checkTUIUpdateByDownload API 不可用时的降级检测：直接下载 bbrv3-cli
+// 最新二进制与本地程序比对（相同=已最新，不同=有更新）。下载走镜像，国内可用。
+// 返回 remoteCommit=""（无 commit 信息，调用方用镜像比对文案）。
+func checkTUIUpdateByDownload(ctx context.Context, log execx.Logger) (remoteCommit string, hasUpdate bool, err error) {
+	log.Logf(i18n.T("update.degrade"))
+	assetName := archAssetName(currentEnv().Arch)
+	if assetName == "" {
+		return "", false, errors.New(i18n.Tf("update.noAsset", currentEnv().Arch))
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return "", false, errors.New(i18n.Tf("update.exeFail", err))
+	}
+	url := fmt.Sprintf("https://github.com/%s/releases/download/bbrv3-cli/%s", bbr.RepoFullName(), assetName)
+	tmp := filepath.Join(os.TempDir(), "bbrv3-latest")
+	_ = os.Remove(tmp)
+	log.Logf(i18n.Tf("update.downloading", assetName))
+	lastPct := 0
+	if err := netutil.Download(ctx, url, tmp, func(downloaded, total int64) {
+		if total <= 0 {
+			return
+		}
+		pct := int(downloaded * 100 / total)
+		if pct >= lastPct+5 || pct == 100 {
+			log.Logf(i18n.Tf("install.dlProgress", pct))
+			lastPct = pct
+		}
+	}); err != nil {
+		_ = os.Remove(tmp)
+		return "", false, err
+	}
+	defer os.Remove(tmp)
+
+	same, err := filesEqual(exe, tmp)
+	if err != nil {
+		return "", false, err
+	}
+	if same {
+		log.Logf(i18n.T("update.latest"))
+		return "", false, nil
+	}
+	log.Logf(i18n.T("update.newFound"))
+	return "", true, nil
+}
+
+// filesEqual 比较两个文件内容是否一致（sha256）。
+func filesEqual(a, b string) (bool, error) {
+	ha, err := hashFile(a)
+	if err != nil {
+		return false, err
+	}
+	hb, err := hashFile(b)
+	if err != nil {
+		return false, err
+	}
+	return ha == hb, nil
+}
+
+func hashFile(p string) (string, error) {
+	f, err := os.Open(p)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // shortCommit 截断 commit SHA 到 8 位（与 CI 注入的 GITHUB_SHA::8 对齐）。
@@ -671,7 +756,8 @@ func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) err
 		break
 	}
 	if url == "" {
-		return errors.New(i18n.Tf("update.noAsset", assetName))
+		// API 降级（atom 无资产信息）：按命名规则构造 bbrv3-cli 资产 URL
+		url = fmt.Sprintf("https://github.com/%s/releases/download/bbrv3-cli/%s", bbr.RepoFullName(), assetName)
 	}
 	// 优先替换安装路径（b 直接执行的本地版本）；未安装 b 时替换当前程序
 	target := bbr.QuickCommandPath
@@ -757,7 +843,11 @@ func downloadReleaseAssets(ctx context.Context, log execx.Logger, releases []net
 		}
 	}
 	if len(assets) == 0 {
-		return errors.New(i18n.Tf("install.noAssets", tag))
+		// API 降级（atom 无资产信息）：按 CI 产物命名规则构造下载 URL
+		assets = guessKernelAssets(tag)
+		if len(assets) == 0 {
+			return errors.New(i18n.Tf("install.noAssets", tag))
+		}
 	}
 
 	_ = execx.RunOK(ctx, "rm", "-f", "/tmp/linux-*.deb")
@@ -781,6 +871,30 @@ func downloadReleaseAssets(ctx context.Context, log execx.Logger, releases []net
 	}
 	log.Logf(i18n.T("install.dlDone"))
 	return nil
+}
+
+// guessKernelAssets API 降级（atom 无资产信息）时按 CI 产物命名规则构造
+// 内核 release 资产（tag 如 x86_64-7.2.0 / arm64-7.2.0-max）。
+func guessKernelAssets(tag string) []netutil.Asset {
+	var arch, ver string
+	switch {
+	case strings.HasPrefix(tag, "x86_64-"):
+		arch, ver = "x86_64", strings.TrimPrefix(tag, "x86_64-")
+	case strings.HasPrefix(tag, "arm64-"):
+		arch, ver = "arm64", strings.TrimPrefix(tag, "arm64-")
+	default:
+		return nil
+	}
+	max := strings.HasSuffix(ver, "-max")
+	ver = strings.TrimSuffix(ver, "-max")
+	var assets []netutil.Asset
+	for _, name := range bbr.KernelAssetNames(ver, arch, max) {
+		assets = append(assets, netutil.Asset{
+			Name:               name,
+			BrowserDownloadURL: fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", bbr.RepoFullName(), tag, name),
+		})
+	}
+	return assets
 }
 
 // envSingleton 由 main 注入的系统环境信息。
