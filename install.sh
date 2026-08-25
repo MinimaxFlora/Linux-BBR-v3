@@ -5,8 +5,24 @@
 #
 # 用法：
 #   bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+#   或（sh/dash 亦可，脚本会自动切换到 bash 执行）：
+#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)"
 #
-# 首次运行后程序会自动安装 `b` 快捷命令，之后可直接输入 b 运行。
+# 首次运行后程序会自动安装 `bbr` 快捷命令，之后可直接输入 bbr 运行。
+
+# 本脚本使用 bash 特性（set -o pipefail、数组等）。
+# 若被 sh/dash 执行（如 `sh -c "$(curl ...)"`，此时 shebang 不生效），
+# 自动检测并切换到 bash 重新执行，避免 "set: Illegal option -o pipefail"。
+if [ -z "${BASH_VERSION:-}" ]; then
+    if command -v bash >/dev/null 2>&1; then
+        if [ -f "$0" ] && [ -r "$0" ]; then
+            exec bash "$0" "$@"
+        fi
+        exec bash -c "$(curl -fsSL "https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh")"
+    fi
+    echo "检测到当前未使用 bash，且系统未安装 bash。请改用：bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)" >&2
+    exit 1
+fi
 
 set -euo pipefail
 
