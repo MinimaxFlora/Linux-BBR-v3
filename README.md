@@ -1,5 +1,9 @@
 # Linux-BBR-v3
 
+<p align="center">
+  <img src="assets/logo.jpg" alt="Linux-BBR-v3 logo" width="480">
+</p>
+
 🌏 **Languages:** 简体中文 | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md)
 
 一个用于 Debian/Ubuntu VPS 的 BBRv3 内核安装与网络加速管理程序。
