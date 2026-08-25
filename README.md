@@ -11,12 +11,17 @@
 ## 运行
 
 ```bash
-# 直接运行（非 root 会自动通过 sudo 重新执行）
-./bbrv3
+# 一键安装并运行（自动检测架构，下载最新版二进制后启动）
+bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+```
 
-# 首次运行后也可直接用快捷命令（每次联网拉取最新版二进制执行）
+首次运行后程序会自动安装 `b` 快捷命令，之后可直接运行：
+
+```bash
 b
 ```
+
+`b` 命令每次都会从 GitHub Releases 拉取最新版二进制执行，不使用本地缓存。
 
 以 root 运行时会先完成：
 
@@ -214,7 +219,8 @@ GitHub Actions 的 `release-cli.yml` workflow（与内核构建独立）会在�
 ## 目录结构
 
 ```text
-main.go                        # 入口（非 root 自动 sudo 重启动）
+install.sh                      # 一键脚本：自动检测架构 → 下载最新二进制 → 执行
+main.go                         # 入口（非 root 自动 sudo 重启动）
 internal/
 ├── bbr/                       # 纯逻辑：版本比较 / tag 解析 / buffer 计算（可单测）
 ├── execx/                     # 命令执行器：流式输出转发到 TUI 日志

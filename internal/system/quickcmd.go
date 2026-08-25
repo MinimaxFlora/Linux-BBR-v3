@@ -52,7 +52,7 @@ if ! curl -fsSL -o "$BIN" "https://github.com/%s/releases/download/bbrv3-cli/$AS
   exit 1
 fi
 chmod +x "$BIN"
-exec "$BIN"
+"$BIN"
 `, bbr.BinaryAssetBase, bbr.BinaryAssetBase, bbr.BinaryAssetBase, bbr.RepoFullName())
 
 	if err := writeFile(ctx, bbr.QuickCommandPath, script, 0o755); err != nil {
