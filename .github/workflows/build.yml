@@ -134,6 +134,9 @@ jobs:
       - name: 检出代码
         if: env.BUILD_NEEDED == 'true'
         uses: actions/checkout@v4
+        with:
+          # 完整历史：回写配置基线前需要 git pull --rebase（浅克隆无法 rebase）
+          fetch-depth: 0
 
       - name: 安装依赖项
         if: env.BUILD_NEEDED == 'true'
@@ -320,4 +323,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add x86-64.config arm64.config
           git commit -m "Refresh generated kernel config baselines [skip ci]"
+          # 构建耗时较长，期间远端 master 可能已被推进：先 rebase 合入再推，
+          # 避免非快进被拒（fetch first）
+          git pull --rebase origin master
           git push
