@@ -19,12 +19,17 @@ const (
 // 品牌标识：内核 LOCALVERSION、配置文件路径、卸载匹配的统一前缀。
 // 原项目为 joeyblog，本仓库替换为 MinimaxFlora。
 const (
-	Brand     = "MinimaxFlora"
-	KernelTag = "bbrv3" // 内核 localversion 后缀
+	// Brand 显示名（界面/日志/MODULE_DESCRIPTION 使用，保留大小写）。
+	Brand = "MinimaxFlora"
+	// KernelBrand 内核包名品牌后缀。Debian 包名必须全小写
+	// （linux-image-7.2.0-minimaxflora-bbrv3），不能用显示名的大写。
+	KernelBrand = "minimaxflora"
+	// KernelTag 内核 localversion 后缀。
+	KernelTag = "bbrv3"
 
-	// 版本字符串后缀，对应内核包名 linux-headers-7.1.8-MinimaxFlora-bbrv3-max_7.1.8-1_amd64.deb
-	StandardVersionSuffix = "-" + Brand + "-" + KernelTag
-	MaxVersionSuffix      = "-" + Brand + "-" + KernelTag + "-max"
+	// 版本字符串后缀，对应内核包名 linux-headers-7.2.0-minimaxflora-bbrv3-max_7.2.0-1_amd64.deb
+	StandardVersionSuffix = "-" + KernelBrand + "-" + KernelTag
+	MaxVersionSuffix      = "-" + KernelBrand + "-" + KernelTag + "-max"
 
 	// 持久化配置文件路径（原 99-joeyblog.conf / joeyblog-qdisc.conf / 99-joeyblog-security.conf）
 	SysctlConfPath          = "/etc/sysctl.d/99-minimaxflora.conf"
@@ -184,7 +189,7 @@ func ProfileLabel(p Profile) string {
 }
 
 // ExpectedInstalledVersion 由 release tag 与 profile 推导期望的已安装内核版本字符串。
-// 例：tag "x86_64-7.1.8-max" + max → "7.1.8-MinimaxFlora-bbrv3-max"。
+// 例：tag "x86_64-7.2.0-max" + max → "7.2.0-minimaxflora-bbrv3-max"。
 func ExpectedInstalledVersion(tag string, p Profile) string {
 	v := strings.TrimPrefix(tag, "x86_64-")
 	v = strings.TrimPrefix(v, "arm64-")

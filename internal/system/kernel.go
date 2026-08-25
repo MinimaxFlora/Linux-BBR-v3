@@ -13,7 +13,7 @@ import (
 )
 
 // InstalledKernelVersion 获取已安装的本项目内核版本（对应 get_installed_version）。
-// profile: standard / max / any。返回内核版本字符串（如 7.1.8-MinimaxFlora-bbrv3-max），未安装返回空。
+// profile: standard / max / any。返回内核版本字符串（如 7.2.0-minimaxflora-bbrv3-max），未安装返回空。
 func InstalledKernelVersion(ctx context.Context, profile bbr.Profile) string {
 	out := execx.TryOutput(ctx, "dpkg", "-l")
 	var versions []string
@@ -23,7 +23,7 @@ func InstalledKernelVersion(ctx context.Context, profile bbr.Profile) string {
 			continue
 		}
 		name := fields[1]
-		if !strings.HasPrefix(name, "linux-image-") || !strings.Contains(name, bbr.Brand) {
+		if !strings.HasPrefix(name, "linux-image-") || !strings.Contains(name, bbr.KernelBrand) {
 			continue
 		}
 		versions = append(versions, strings.TrimPrefix(name, "linux-image-"))
@@ -67,7 +67,7 @@ func InstalledKernelPackages(ctx context.Context) []string {
 		if len(fields) < 2 || fields[0] != "ii" {
 			continue
 		}
-		if strings.Contains(fields[1], bbr.Brand) {
+		if strings.Contains(fields[1], bbr.KernelBrand) {
 			pkgs = append(pkgs, fields[1])
 		}
 	}

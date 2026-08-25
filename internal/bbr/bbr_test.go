@@ -125,11 +125,12 @@ func TestProfileLabel(t *testing.T) {
 }
 
 func TestExpectedInstalledVersion(t *testing.T) {
-	// 用户给出的案例：linux-headers-7.1.8-MinimaxFlora-bbrv3-max_7.1.8-1_amd64.deb
-	if got := ExpectedInstalledVersion("x86_64-7.1.8-max", ProfileMax); got != "7.1.8-MinimaxFlora-bbrv3-max" {
+	// 用户给出的案例：linux-headers-7.2.0-minimaxflora-bbrv3-max_7.2.0-1_amd64.deb
+	// （Debian 包名必须全小写，不能用显示名 MinimaxFlora 的大写）
+	if got := ExpectedInstalledVersion("x86_64-7.2.0-max", ProfileMax); got != "7.2.0-minimaxflora-bbrv3-max" {
 		t.Errorf("ExpectedInstalledVersion max = %q", got)
 	}
-	if got := ExpectedInstalledVersion("arm64-7.0.11", ProfileStandard); got != "7.0.11-MinimaxFlora-bbrv3" {
+	if got := ExpectedInstalledVersion("arm64-7.0.11", ProfileStandard); got != "7.0.11-minimaxflora-bbrv3" {
 		t.Errorf("ExpectedInstalledVersion standard = %q", got)
 	}
 }

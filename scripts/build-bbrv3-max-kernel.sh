@@ -66,9 +66,9 @@ export KERNEL_VERSION="$kernel_version"
 bash "$repo_root/scripts/prepare-kernel-config.sh" "$config_arch"
 
 if [[ "$build_arch" == "arm64" ]]; then
-  make ARCH=arm64 bindeb-pkg -j"$(nproc)" LOCALVERSION=-MinimaxFlora-bbrv3-max KDEB_COMPRESS=gzip skipdbg=true
+  make ARCH=arm64 bindeb-pkg -j"$(nproc)" LOCALVERSION=-minimaxflora-bbrv3-max KDEB_COMPRESS=gzip skipdbg=true
 else
-  make bindeb-pkg -j"$(nproc)" LOCALVERSION=-MinimaxFlora-bbrv3-max KDEB_COMPRESS=gzip skipdbg=true
+  make bindeb-pkg -j"$(nproc)" LOCALVERSION=-minimaxflora-bbrv3-max KDEB_COMPRESS=gzip skipdbg=true
 fi
 
 if find "$workdir" -maxdepth 1 \( -name '*-dbg*.deb' -o -name '*-dbgsym*.deb' \) | grep -q .; then

@@ -88,11 +88,11 @@ linux-7.0.y -> patches/bbrv3-linux-7.0.patch
 linux-7.1.y -> patches/bbrv3-linux-7.1.patch
 ```
 
-内核包由 GitHub Actions 构建并发布到 Releases，包名示例：
+内核包由 GitHub Actions 构建并发布到 Releases，包名示例（Debian 包名规范要求全小写，`minimaxflora` 为品牌后缀）：
 
 ```text
-linux-headers-7.1.8-MinimaxFlora-bbrv3_7.1.8-1_amd64.deb        （标准版）
-linux-headers-7.1.8-MinimaxFlora-bbrv3-max_7.1.8-1_amd64.deb    （Max 版）
+linux-headers-7.2.0-minimaxflora-bbrv3_7.2.0-1_amd64.deb        （标准版）
+linux-headers-7.2.0-minimaxflora-bbrv3-max_7.2.0-1_amd64.deb    （Max 版）
 ```
 
 release tag 格式：
