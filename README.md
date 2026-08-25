@@ -21,11 +21,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/ma
 b
 ```
 
-`b` 命令每次都会从 GitHub Releases 拉取最新版二进制执行，不使用本地缓存。
+`b` 命令直接执行本地已安装版本，不再联网下载；更新请用 TUI 菜单 10「检测 TUI 更新」。
 
 以 root 运行时会先完成：
 
-1. 安装 `/usr/local/bin/b` 快捷命令（联网拉取最新 Go 二进制）。
+1. 安装 `/usr/local/bin/b` 快捷命令（复制当前二进制到本地，之后直接执行）。
 2. 写入 Dirty Frag 风险面收敛规则（`/etc/modprobe.d/99-minimaxflora-security.conf`）。
 
 然后进入交互菜单。
@@ -214,7 +214,7 @@ BBRV3_DEV=1 go run .
 go test ./...
 ```
 
-GitHub Actions 的 `release-cli.yml` workflow（与内核构建独立）会在推送 master 或手动触发时构建并发布二进制到 `bbrv3-cli` release，`b` 快捷命令从中拉取最新版本。`build.yml` 只负责内核构建与发布。
+GitHub Actions 的 `release-cli.yml` workflow（与内核构建独立）会在推送 master 或手动触发时构建并发布二进制到 `bbrv3-cli` release，TUI 菜单 10「检测 TUI 更新」从中拉取最新版本替换本地 `b`。`build.yml` 只负责内核构建与发布。
 
 ## 目录结构
 

@@ -649,7 +649,9 @@ func (m Model) startSelfUpdate(assetName string) (Model, tea.Cmd) {
 	return m, cmd
 }
 
-// updateSelfFlow 从 bbrv3-cli release 下载匹配架构的二进制并替换自身。
+// updateSelfFlow 从 bbrv3-cli release 下载匹配架构的二进制并替换安装路径
+// /usr/local/bin/b（`b` 快捷命令直接执行它，下次运行即新版本）；
+// 未安装快捷命令时退回替换当前程序自身。
 func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) error {
 	releases, err := fetchReleases(ctx, log)
 	if err != nil {
@@ -671,11 +673,16 @@ func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) err
 	if url == "" {
 		return errors.New(i18n.Tf("update.noAsset", assetName))
 	}
-	exe, err := os.Executable()
-	if err != nil {
-		return errors.New(i18n.Tf("update.exeFail", err))
+	// 优先替换安装路径（b 直接执行的本地版本）；未安装 b 时替换当前程序
+	target := bbr.QuickCommandPath
+	if _, err := os.Stat(target); err != nil {
+		exe, err := os.Executable()
+		if err != nil {
+			return errors.New(i18n.Tf("update.exeFail", err))
+		}
+		target = exe
 	}
-	tmp := exe + ".new"
+	tmp := target + ".new"
 	log.Logf(i18n.Tf("update.downloading", assetName))
 	lastPct := 0
 	err = netutil.Download(ctx, url, tmp, func(downloaded, total int64) {
@@ -696,7 +703,7 @@ func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) err
 		_ = os.Remove(tmp)
 		return err
 	}
-	if err := os.Rename(tmp, exe); err != nil {
+	if err := os.Rename(tmp, target); err != nil {
 		_ = os.Remove(tmp)
 		return errors.New(i18n.Tf("update.replaceFail", err))
 	}

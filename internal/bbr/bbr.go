@@ -40,10 +40,8 @@ const (
 	RepoOwner = "MinimaxFlora"
 	RepoName  = "Linux-BBR-v3"
 
-	// 快捷命令路径与远程拉取入口
+	// 快捷命令安装路径（b 直接执行本地版本，更新走 TUI 菜单 10）
 	QuickCommandPath = "/usr/local/bin/b"
-	// Go 二进制发布资产名（不带架构后缀，下载时按架构拼接）
-	BinaryAssetBase = "bbrv3"
 )
 
 // RepoFullName 返回 owner/repo。

@@ -2,7 +2,6 @@ package system
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
@@ -23,42 +22,27 @@ func getenvBool(key string) bool {
 }
 
 // InstallQuickCommand 安装 /usr/local/bin/b 快捷命令（对应 install_quick_command）。
-// Go 版快捷命令每次联网从 GitHub Releases 拉取最新编译好的二进制后执行，
-// 不再使用本地缓存脚本。
+// 首次运行（install.sh 或直接执行二进制）时把当前程序复制到 /usr/local/bin/b，
+// 之后 `b` 直接执行本地已安装版本，不再联网下载；
+// 后续更新通过 TUI 菜单"检测 TUI 更新"完成（替换安装路径）。
 func InstallQuickCommand(ctx context.Context, log execx.Logger) error {
 	if skip := getenvBool("BBRV3_SKIP_QUICK_COMMAND"); skip {
 		return nil
 	}
 
-	script := fmt.Sprintf(`#!/usr/bin/env bash
-set -euo pipefail
-export BBRV3_SKIP_QUICK_COMMAND=1
-
-ARCH="$(uname -m)"
-case "$ARCH" in
-  x86_64)  ASSET="%s-linux-amd64" ;;
-  aarch64) ASSET="%s-linux-arm64" ;;
-  *)
-    echo "不支持的架构: $ARCH" >&2
-    exit 1
-    ;;
-esac
-
-TMPDIR="$(mktemp -d)"
-trap 'rm -rf "$TMPDIR"' EXIT
-BIN="$TMPDIR/%s"
-
-if ! curl -fsSL -o "$BIN" "https://github.com/%s/releases/download/bbrv3-cli/$ASSET"; then
-  echo "下载最新版失败，请检查网络连接。" >&2
-  exit 1
-fi
-chmod +x "$BIN"
-"$BIN"
-`, bbr.BinaryAssetBase, bbr.BinaryAssetBase, bbr.BinaryAssetBase, bbr.RepoFullName())
-
-	if err := writeFile(ctx, bbr.QuickCommandPath, script, 0o755); err != nil {
+	exe, err := os.Executable()
+	if err != nil {
 		log.Logf(i18n.T("sys.quickFail"))
 		return err
 	}
+	// 已通过 b 运行（自身就是安装路径）时无需复制
+	if exe == bbr.QuickCommandPath {
+		return nil
+	}
+	if err := copyFile(ctx, exe, bbr.QuickCommandPath, 0o755); err != nil {
+		log.Logf(i18n.T("sys.quickFail"))
+		return err
+	}
+	log.Logf(i18n.Tf("sys.quickInstalled", bbr.QuickCommandPath))
 	return nil
 }
