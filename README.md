@@ -1,5 +1,3 @@
-# Linux-BBR-v3
-
 <p align="center">
   <img src="assets/logo.jpg" alt="Linux-BBR-v3 logo" width="480">
 </p>

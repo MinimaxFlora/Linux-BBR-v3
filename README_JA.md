@@ -1,4 +1,6 @@
-# Linux-BBR-v3
+<p align="center">
+  <img src="assets/logo.jpg" alt="Linux-BBR-v3 logo" width="480">
+</p>
 
 🌏 **言語:** [简体中文](README.md) | [English](README_EN.md) | **日本語** | [한국어](README_KO.md)
 
