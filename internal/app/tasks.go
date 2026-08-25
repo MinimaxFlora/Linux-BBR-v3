@@ -57,7 +57,7 @@ func menuInstallLatest(m Model) (Model, tea.Cmd) {
 						return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
 					})
 			}
-			return m.showResult(i18n.T("install.upToDateR"), i18n.Tf("install.upToDate", label))
+			return m.showResultSimple(i18n.T("install.upToDateR"), i18n.Tf("install.upToDate", label))
 		}
 		return m, cmd
 	})
@@ -171,9 +171,9 @@ func installVersionInput(m Model, p bbr.Profile) func(string) (Model, tea.Cmd) {
 						return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
 					})
 			}
-			// 目标版本已安装：显示"已是该版本"
+			// 目标版本已安装：简洁提示"已是该版本"
 			expected := bbr.ExpectedInstalledVersion(bbr.KernelTagFor(currentEnv().ArchFilter, ver, p), p)
-			return m.showResult(i18n.T("install.upToDateR"), i18n.Tf("install.upToDateVer", expected))
+			return m.showResultSimple(i18n.T("install.upToDateR"), i18n.Tf("install.upToDateVer", expected))
 		}
 		return m, cmd
 	}

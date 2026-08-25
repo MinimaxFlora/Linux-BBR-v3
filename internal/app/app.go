@@ -88,9 +88,10 @@ type Model struct {
 	afterTask func(Model) (Model, tea.Cmd)
 
 	// 结果页
-	resultTitle string
-	resultLines []string
-	resultExtra string // 结果页底部的操作提示
+	resultTitle  string
+	resultLines  []string
+	resultExtra  string // 结果页底部的操作提示
+	resultSimple bool   // 简洁结果页（不显示日志尾部）
 
 	// 确认页
 	confirmPrompt string
@@ -346,6 +347,16 @@ func (m Model) showResult(title string, extra string) (Model, tea.Cmd) {
 	m.page = PageResult
 	m.resultTitle = title
 	m.resultExtra = extra
+	m.resultSimple = false
+	return m, nil
+}
+
+// showResultSimple 简洁结果页：不显示任务日志尾部（如"已是最新"场景，只显示标题与提示）。
+func (m Model) showResultSimple(title string, extra string) (Model, tea.Cmd) {
+	m.page = PageResult
+	m.resultTitle = title
+	m.resultExtra = extra
+	m.resultSimple = true
 	return m, nil
 }
 

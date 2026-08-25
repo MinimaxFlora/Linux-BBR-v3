@@ -329,29 +329,36 @@ func (m Model) viewLog() string {
 	return b.String()
 }
 
-// viewResult 结果页：横幅 + 日志尾部 + 附加提示。
+// viewResult 结果页：横幅 + 日志尾部（简洁模式不显示）+ 附加提示。
 func (m Model) viewResult() string {
-	start := len(m.logs) - 15
-	if start < 0 {
-		start = 0
-	}
-	var body strings.Builder
-	for _, l := range m.logs[start:] {
-		body.WriteString(colorizeLog(l))
-		body.WriteString("\n")
-	}
-	if m.taskErr != nil {
-		body.WriteString(red("✘ " + m.taskErr.Error()))
-		body.WriteString("\n")
-	}
-
 	var b strings.Builder
 	b.WriteString(resultBanner(m.resultTitle, m.taskErr != nil))
 	b.WriteString("\n\n")
-	b.WriteString(m.renderCard(strings.TrimSuffix(body.String(), "\n")))
-	b.WriteString("\n\n")
-	b.WriteString(yellow(m.resultExtra))
-	b.WriteString("\n\n")
+	if !m.resultSimple {
+		start := len(m.logs) - 15
+		if start < 0 {
+			start = 0
+		}
+		var body strings.Builder
+		for _, l := range m.logs[start:] {
+			body.WriteString(colorizeLog(l))
+			body.WriteString("\n")
+		}
+		if m.taskErr != nil {
+			body.WriteString(red("✘ " + m.taskErr.Error()))
+			body.WriteString("\n")
+		}
+		b.WriteString(m.renderCard(strings.TrimSuffix(body.String(), "\n")))
+		b.WriteString("\n\n")
+	}
+	if m.taskErr != nil && m.resultSimple {
+		b.WriteString(red("✘ " + m.taskErr.Error()))
+		b.WriteString("\n\n")
+	}
+	if m.resultExtra != "" {
+		b.WriteString(yellow(m.resultExtra))
+		b.WriteString("\n\n")
+	}
 	b.WriteString(m.bottomBar(
 		[2]string{"Enter", i18n.T("help.back")},
 		[2]string{"q", i18n.T("help.quit")},
