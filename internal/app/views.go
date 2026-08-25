@@ -87,30 +87,41 @@ func (m Model) viewMenu() string {
 	status = append(status, shortLabel(i18n.T("menu.ver")+": ")+cyan(Version))
 
 	// 信息卡：欢迎语 / 作者·博客·项目 / 状态（竖排分区）
-	info := joinSections(0,
-		[]string{dim("✧  ") + bold(i18n.T("boot.title"))},
-		[]string{
+	infoSegs := [][]string{
+		{dim("✧  ") + bold(i18n.T("boot.title"))},
+		{
 			pink("◈  ") + dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
 			cyan("📝  ") + dim(i18n.T("menu.blog")+"：") + itemStyle.Render(i18n.T("menu.blogUrl")),
 			cyan("◆  ") + dim(i18n.T("menu.repoLabel")+"：") + itemStyle.Render(i18n.T("menu.repoUrl")),
 		},
 		status,
-	)
+	}
 
 	// 菜单卡：标题 + 选项列表
 	rows := make([]itemRow, 0, len(menuItems))
 	for _, it := range menuItems {
-		rows = append(rows, itemRow{num: padNum(it.num) + ".", icon: it.icon, label: i18n.T(it.labelKey)})
+		rows = append(rows, itemRow{num: padNum(it.num) + ".", label: i18n.T(it.labelKey)})
 	}
-	menu := joinSections(0,
-		[]string{cardTitle(i18n.T("menu.choose"))},
+	menuSegs := [][]string{
+		{cardTitle(i18n.T("menu.choose"))},
 		strings.Split(renderItems(rows, m.menuCursor), "\n"),
-	)
+	}
+
+	// 上下两张卡等宽：取两者最大内容宽（lipgloss v1.1.0 的 Width 含内边距，故 +4）
+	info := joinSections(0, infoSegs...)
+	menu := joinSections(0, menuSegs...)
+	w := maxInt(blockWidth(info), blockWidth(menu))
+	st := cardStyle
+	if w > 12 {
+		info = joinSections(w, infoSegs...)
+		menu = joinSections(w, menuSegs...)
+		st = st.Width(w + 4)
+	}
 
 	var b strings.Builder
-	b.WriteString(m.renderCard(info))
+	b.WriteString(st.Render(info))
 	b.WriteString("\n\n")
-	b.WriteString(m.renderCard(menu))
+	b.WriteString(st.Render(menu))
 	b.WriteString("\n\n")
 	b.WriteString(m.bottomBar(
 		[2]string{"↑/↓", i18n.T("help.select")},
@@ -127,7 +138,7 @@ func (m Model) viewMenu() string {
 func (m Model) viewQdisc() string {
 	rows := make([]itemRow, 0, len(qdiscOptions))
 	for _, opt := range qdiscOptions {
-		rows = append(rows, itemRow{num: padNum(opt.num) + ".", icon: "🚦", label: i18n.T(opt.labelKey)})
+		rows = append(rows, itemRow{num: padNum(opt.num) + ".", label: i18n.T(opt.labelKey)})
 	}
 	content := joinSections(0,
 		[]string{cardTitle("⚡ " + i18n.T("qdisc.title"))},
@@ -145,8 +156,8 @@ func (m Model) viewQdisc() string {
 // viewProfile 内核类型选择页（1 标准 / 2 Max）。
 func (m Model) viewProfile() string {
 	rows := []itemRow{
-		{num: "01.", icon: "🚀", label: i18n.T("profile.item1")},
-		{num: "02.", icon: "⚡", label: i18n.T("profile.item2")},
+		{num: "01.", label: i18n.T("profile.item1")},
+		{num: "02.", label: i18n.T("profile.item2")},
 	}
 	lines := strings.Split(renderItems(rows, m.profileCursor), "\n")
 	if m.profileCursor == 1 {

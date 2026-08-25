@@ -7,25 +7,24 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// menuEntry 主菜单项（原 12 项合并 4-7 为 1 项，共 9 项）。
+// menuEntry 主菜单项（原 12 项合并 4-7 为 1 项，共 10 项）。
 type menuEntry struct {
-	num   string
-	icon  string
+	num      string
 	labelKey string
-	act   func(Model) (Model, tea.Cmd)
+	act      func(Model) (Model, tea.Cmd)
 }
 
 var menuItems = []menuEntry{
-	{num: "1", icon: "🚀", labelKey: "menu.item1", act: menuInstallLatest},
-	{num: "2", icon: "📚", labelKey: "menu.item2", act: menuInstallSpecific},
-	{num: "3", icon: "🔍", labelKey: "menu.item3", act: menuCheckStatus},
-	{num: "4", icon: "⚡", labelKey: "menu.item4", act: menuQdiscSelect},
-	{num: "5", icon: "🌏", labelKey: "menu.item5", act: menuAPACTuning},
-	{num: "6", icon: "🗑️", labelKey: "menu.item6", act: menuUninstall},
-	{num: "7", icon: "🧠", labelKey: "menu.item7", act: menuSmartTuning},
-	{num: "8", icon: "🧹", labelKey: "menu.item8", act: menuClearOptimizations},
-	{num: "9", icon: "🧨", labelKey: "menu.item9", act: menuExtremeMode},
-	{num: "10", icon: "🔄", labelKey: "menu.item10", act: menuCheckUpdate},
+	{num: "1", labelKey: "menu.item1", act: menuInstallLatest},
+	{num: "2", labelKey: "menu.item2", act: menuInstallSpecific},
+	{num: "3", labelKey: "menu.item3", act: menuCheckStatus},
+	{num: "4", labelKey: "menu.item4", act: menuQdiscSelect},
+	{num: "5", labelKey: "menu.item5", act: menuAPACTuning},
+	{num: "6", labelKey: "menu.item6", act: menuUninstall},
+	{num: "7", labelKey: "menu.item7", act: menuSmartTuning},
+	{num: "8", labelKey: "menu.item8", act: menuClearOptimizations},
+	{num: "9", labelKey: "menu.item9", act: menuExtremeMode},
+	{num: "10", labelKey: "menu.item10", act: menuCheckUpdate},
 }
 
 // qdiscOptions 加速模式子菜单（原菜单 4-7 合并而来）。

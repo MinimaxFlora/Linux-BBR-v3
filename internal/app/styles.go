@@ -129,6 +129,17 @@ func (m Model) bottomBar(keys ...[2]string) string {
 
 // ---------- 卡片内容 ----------
 
+// blockWidth 多行字符串的最大行宽（ANSI 感知，取最长行）。
+func blockWidth(s string) int {
+	maxW := 0
+	for _, l := range strings.Split(s, "\n") {
+		if w := lipgloss.Width(l); w > maxW {
+			maxW = w
+		}
+	}
+	return maxW
+}
+
 // renderCard 渲染内容卡片（圆角紫边框，宽度跟随内容，不撑满）。
 func (m Model) renderCard(content string) string {
 	return cardStyle.Render(content)
@@ -197,7 +208,6 @@ func memSize(b uint64) string {
 // itemRow 渲染用选项行。
 type itemRow struct {
 	num   string // 编号（含尾随点，如 "01."）
-	icon  string // emoji 图标（可空）
 	label string // 已翻译标签
 }
 
@@ -209,20 +219,16 @@ func padNum(s string) string {
 	return s
 }
 
-// renderItems 渲染选项列表：未选中 = 青色编号 + 图标 + 浅灰标签；
+// renderItems 渲染选项列表：未选中 = 青色编号 + 浅灰标签；
 // 选中 = 粉色整行高亮白字（▸ 占位对齐，标签列与未选中行一致）。
 func renderItems(items []itemRow, cursor int) string {
 	var lines []string
 	for i, it := range items {
-		body := it.num
-		if it.icon != "" {
-			body += " " + it.icon
-		}
-		body += " " + it.label
+		body := it.num + " " + it.label
 		if i == cursor {
 			lines = append(lines, selectedItemStyle.Render("▸ "+body))
 		} else {
-			lines = append(lines, "   "+numStyle(it.num)+" "+itemStyle.Render(strings.TrimPrefix(body, it.num+" ")))
+			lines = append(lines, "   "+numStyle(it.num)+" "+itemStyle.Render(it.label))
 		}
 	}
 	return strings.Join(lines, "\n")
