@@ -88,6 +88,7 @@ func (m Model) viewMenu() string {
 		)
 	}
 	status = append(status, shortLabel(i18n.T("menu.ver")+": ")+cyan(Version))
+	status = append(status, shortLabel(i18n.T("menu.mirrorShort")+": ")+mirrorStatusLabel())
 
 	// 信息卡：欢迎语 / 作者·博客·项目 / 状态（竖排分区）
 	infoSegs := [][]string{

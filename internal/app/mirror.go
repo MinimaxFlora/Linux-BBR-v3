@@ -1,6 +1,8 @@
 package app
 
 import (
+	"strings"
+
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/netutil"
 
@@ -61,4 +63,24 @@ func mirrorLabel(v string) string {
 	default:
 		return v
 	}
+}
+
+// mirrorStatusLabel 信息卡状态行的网络源短标签（auto/direct 短文案，URL 只显示主机名）。
+func mirrorStatusLabel() string {
+	switch v := netutil.CurrentMirror(); v {
+	case netutil.MirrorAuto:
+		return green(i18n.T("mirror.shortAuto"))
+	case netutil.MirrorDirect:
+		return cyan(i18n.T("mirror.shortDirect"))
+	default:
+		return cyan(mirrorHost(v))
+	}
+}
+
+// mirrorHost 提取镜像 URL 的主机名（去协议与尾斜杠）。
+func mirrorHost(u string) string {
+	u = strings.TrimPrefix(u, "https://")
+	u = strings.TrimPrefix(u, "http://")
+	u = strings.TrimSuffix(u, "/")
+	return u
 }
