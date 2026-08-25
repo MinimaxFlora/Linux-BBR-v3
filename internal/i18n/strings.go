@@ -284,8 +284,9 @@ var zhStrings = map[string]string{
 	"sys.osUnknown":   "无法识别当前系统版本，已拒绝安装 7.x 主线内核。\n最低支持：Ubuntu 24.04+ / Debian 12+；推荐系统：Ubuntu 24.04+ / Debian 12。",
 	"sys.osNotAllow":  "当前系统为 %s，不在 7.x 主线内核安装白名单内。\n最低支持：Ubuntu 24.04+ / Debian 12+；推荐系统：Ubuntu 24.04+ / Debian 12。旧系统/衍生系统可能因用户态、initramfs 或引导链路过旧导致 kernel panic。",
 	"sys.osTooOld":    "当前系统版本过旧：%s。已拒绝安装 7.x 主线内核。\n最低要求：%s %s+。推荐使用 Ubuntu 24.04+ 或 Debian 12+。请先升级系统，再重新运行本程序。\n你仍可使用状态检查、网络调优、清空优化或卸载功能。",
-	"sys.quickFail":      "提示：快捷命令 b 安装失败，不影响当前运行。",
-	"sys.quickInstalled": "✔ 快捷命令 b 已安装到 %s，之后直接输入 b 即可运行（更新请用菜单 10）。",
+	"sys.quickFail":      "提示：快捷命令 bbr 安装失败，不影响当前运行。",
+	"sys.quickMigrated":  "已移除旧快捷命令 b，请改用 bbr。",
+	"sys.quickInstalled": "✔ 快捷命令 bbr 已安装到 %s，之后直接输入 bbr 即可运行（更新请用菜单 10）。",
 
 	// ---- 内核层 ----
 	"kernel.bootUpdating":  "正在更新引导加载程序...",
@@ -611,8 +612,9 @@ var enStrings = map[string]string{
 	"sys.osUnknown":  "Cannot identify the system, refused to install 7.x mainline kernel.\nMinimum: Ubuntu 24.04+ / Debian 12+; recommended: Ubuntu 24.04+ / Debian 12.",
 	"sys.osNotAllow": "Current system %s is not in the 7.x mainline whitelist.\nMinimum: Ubuntu 24.04+ / Debian 12+; older/derived systems may kernel panic due to old userspace/initramfs/boot chain.",
 	"sys.osTooOld":   "System too old: %s. Refused to install 7.x mainline kernel.\nMinimum required: %s %s+. Please upgrade and re-run.\nStatus check, network tuning, clear and uninstall still work.",
-	"sys.quickFail":      "Note: quick command b install failed, does not affect this run.",
-	"sys.quickInstalled": "✔ Quick command b installed to %s. Run 'b' directly; update via menu 10.",
+	"sys.quickFail":      "Note: quick command bbr install failed, does not affect this run.",
+	"sys.quickMigrated":  "Old quick command b removed; use bbr instead.",
+	"sys.quickInstalled": "✔ Quick command bbr installed to %s. Run 'bbr' directly; update via menu 10.",
 
 	// ---- Kernel ----
 	"kernel.bootUpdating": "Updating bootloader...",

@@ -25,7 +25,7 @@ func writeFile(ctx context.Context, path, content string, mode os.FileMode) erro
 }
 
 // copyFile 复制 src 到 dst：先写临时文件再 rename 原子替换，
-// 目标正在运行（如 /usr/local/bin/b）时也安全。
+// 目标正在运行（如 /usr/local/bin/bbr）时也安全。
 func copyFile(ctx context.Context, src, dst string, mode os.FileMode) error {
 	in, err := os.Open(src)
 	if err != nil {

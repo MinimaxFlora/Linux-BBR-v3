@@ -4,7 +4,7 @@
 
 本项目是 [byJoey/Actions-bbr-v3](https://github.com/byJoey/Actions-bbr-v3) 的 **Go + [bubbletea](https://github.com/charmbracelet/bubbletea) TUI 重写版**：
 
-- 原 shell 版 `install.sh` 重写为 Go 程序，**功能与选项完全一致**（12 项菜单、安全缓解、`b` 快捷命令）。
+- 原 shell 版 `install.sh` 重写为 Go 程序，**功能与选项完全一致**（12 项菜单、安全缓解、`bbr` 快捷命令）。
 - 品牌标识由 `joeyblog` 替换为 `MinimaxFlora`（内核包名、配置路径、卸载匹配、MODULE_DESCRIPTION）。
 - 内核 `.deb` 包从本仓库 GitHub Releases 下载。
 
@@ -15,17 +15,17 @@
 bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
 ```
 
-首次运行后程序会自动安装 `b` 快捷命令，之后可直接运行：
+首次运行后程序会自动安装 `bbr` 快捷命令，之后可直接运行：
 
 ```bash
-b
+bbr
 ```
 
-`b` 命令直接执行本地已安装版本，不再联网下载；更新请用 TUI 菜单 10「检测 TUI 更新」。
+`bbr` 命令直接执行本地已安装版本，不再联网下载；更新请用 TUI 菜单 10「检测 TUI 更新」。
 
 以 root 运行时会先完成：
 
-1. 安装 `/usr/local/bin/b` 快捷命令（复制当前二进制到本地，之后直接执行）。
+1. 安装 `/usr/local/bin/bbr` 快捷命令（复制当前二进制到本地，之后直接执行）。
 2. 写入 Dirty Frag 风险面收敛规则（`/etc/modprobe.d/99-minimaxflora-security.conf`）。
 
 然后进入交互菜单。
@@ -214,7 +214,7 @@ BBRV3_DEV=1 go run .
 go test ./...
 ```
 
-GitHub Actions 的 `release-cli.yml` workflow（与内核构建独立）会在推送 master 或手动触发时构建并发布二进制到 `bbrv3-cli` release，TUI 菜单 10「检测 TUI 更新」从中拉取最新版本替换本地 `b`。`build.yml` 只负责内核构建与发布。
+GitHub Actions 的 `release-cli.yml` workflow（与内核构建独立）会在推送 master 或手动触发时构建并发布二进制到 `bbrv3-cli` release，TUI 菜单 10「检测 TUI 更新」从中拉取最新版本替换本地 `bbr`。`build.yml` 只负责内核构建与发布。
 
 ## 目录结构
 

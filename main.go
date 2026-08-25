@@ -1,5 +1,5 @@
 // Linux-BBR-v3 是 Actions-bbr-v3 的 Go + bubbletea TUI 重写版。
-// 功能与原 shell 版完全一致（12 项菜单 + 安全缓解 + b 快捷命令），
+// 功能与原 shell 版完全一致（12 项菜单 + 安全缓解 + bbr 快捷命令），
 // 品牌标识由 joeyblog 替换为 MinimaxFlora。
 package main
 

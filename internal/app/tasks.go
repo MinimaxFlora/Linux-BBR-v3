@@ -594,7 +594,7 @@ func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string,
 	if !found {
 		return "", false, errors.New(i18n.T("update.noRelease"))
 	}
-	// 拿 master 分支最新 commit（b 命令实际会下载到的版本）
+	// 拿 master 分支最新 commit（bbr 更新实际会下载到的版本）
 	log.Logf(i18n.T("update.fetchHead"))
 	remoteCommit, err = netutil.FetchBranchHead(ctx, githubToken(), "master")
 	if err != nil {
@@ -650,7 +650,7 @@ func (m Model) startSelfUpdate(assetName string) (Model, tea.Cmd) {
 }
 
 // updateSelfFlow 从 bbrv3-cli release 下载匹配架构的二进制并替换安装路径
-// /usr/local/bin/b（`b` 快捷命令直接执行它，下次运行即新版本）；
+// /usr/local/bin/bbr（`bbr` 快捷命令直接执行它，下次运行即新版本）；
 // 未安装快捷命令时退回替换当前程序自身。
 func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) error {
 	releases, err := fetchReleases(ctx, log)
