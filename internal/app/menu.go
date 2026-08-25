@@ -140,8 +140,11 @@ func menuQdiscSelect(m Model) (Model, tea.Cmd) {
 // handleProfileKey 内核类型选择（1 标准 / 2 Max）。
 func (m Model) handleProfileKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "q", "ctrl+c", "esc":
+	case "q", "ctrl+c":
 		return m, tea.Quit
+	case "esc":
+		// 点错返回上一级（主菜单），不退出程序
+		return m.goMenu()
 	case "up", "k":
 		if m.profileCursor > 0 {
 			m.profileCursor--
@@ -241,12 +244,12 @@ func (m Model) handleVersionKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleResultKey 结果页：enter 返回菜单。
+// handleResultKey 结果页：esc 返回主菜单，enter/空格 返回主菜单，q 退出。
 func (m Model) handleResultKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
-	case "q", "ctrl+c", "esc":
+	case "q", "ctrl+c":
 		return m, tea.Quit
-	case "enter", " ":
+	case "esc", "enter", " ":
 		return m.goMenu()
 	}
 	return m, nil

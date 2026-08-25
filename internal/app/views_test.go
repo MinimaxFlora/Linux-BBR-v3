@@ -161,3 +161,33 @@ func TestResultViewShowsLog(t *testing.T) {
 		t.Error("结果页应显示日志尾部")
 	}
 }
+
+// Esc 在子页面应返回主菜单而不是退出程序（用户点错场景）。
+func TestEscReturnsToMenu(t *testing.T) {
+	m := testModel()
+	esc := tea.KeyMsg{Type: tea.KeyEsc}
+
+	// 内核类型选择页：Esc → 主菜单
+	m = press(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	if m.page != PageProfile {
+		t.Fatalf("按 1 应进入内核类型选择页")
+	}
+	m = press(m, esc)
+	if m.page != PageMenu {
+		t.Fatalf("Profile 页按 Esc 应返回主菜单, got page=%d", m.page)
+	}
+
+	// 结果页：Esc → 主菜单
+	m, _ = m.showResult("✔ 完成", "")
+	m = press(m, esc)
+	if m.page != PageMenu {
+		t.Fatalf("结果页按 Esc 应返回主菜单, got page=%d", m.page)
+	}
+
+	// q 仍是退出（handleKey 返回 Quit cmd）
+	nm, cmd := m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	_ = nm
+	if cmd == nil {
+		t.Fatal("主菜单按 q 应返回退出命令")
+	}
+}
