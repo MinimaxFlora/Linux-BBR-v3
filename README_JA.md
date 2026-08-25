@@ -65,6 +65,10 @@ root で実行すると、まず以下を行います：
 
 その後、対話メニューに入ります。
 
+## 画面プレビュー
+
+![BBRv3 TUI メインメニュー](docs/screenshot.png)
+
 ## 中国国内ネットワーク対応
 
 デフォルトは**自動モード**：GitHub 直結を試し、失敗すると国内ミラー（`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`）を順に自動で試します（静かに切り替え）。

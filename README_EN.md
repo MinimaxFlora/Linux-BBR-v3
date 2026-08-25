@@ -65,6 +65,10 @@ When running as root, the program first:
 
 Then the interactive menu starts.
 
+## Screenshots
+
+![BBRv3 TUI main menu](docs/screenshot.png)
+
 ## China Mainland Network Support
 
 The program defaults to **auto mode**: it tries GitHub directly, and on failure silently falls back to mainland China mirror sources in order (`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`).

@@ -65,6 +65,10 @@ bbr
 
 然后进入交互菜单。
 
+## 界面预览
+
+![BBRv3 TUI 主界面](docs/screenshot.png)
+
 ## 国内网络支持
 
 程序默认**自动模式**：直连 GitHub，失败时自动依次尝试国内镜像源（`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`），静默切换不打扰。

@@ -65,6 +65,10 @@ root로 실행하면 먼저 다음을 수행합니다:
 
 그런 다음 대화형 메뉴로 진입합니다.
 
+## 화면 미리보기
+
+![BBRv3 TUI 메인 메뉴](docs/screenshot.png)
+
 ## 중국 국내 네트워크 지원
 
 기본값은 **자동 모드**: GitHub 직접 연결을 시도하고, 실패하면 국내 미러(`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`)를 순서대로 자동 시도합니다(조용히 전환).
