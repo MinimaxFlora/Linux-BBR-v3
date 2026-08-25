@@ -98,45 +98,22 @@ func (r Release) NonDebugAssets() []Asset {
 	return out
 }
 
-// FetchTagCommit 获取 tag 指向的 commit SHA。
-// 固定 tag release 的 target_commitish 可能是分支名（如 "master"），
-// 需要走 git ref API 拿真实 SHA；annotated tag 需再解引用一次。
-func FetchTagCommit(ctx context.Context, token, tag string) (string, error) {
-	sha, typ, err := gitRefObject(ctx, token, "tags/"+tag)
+// FetchBranchHead 获取分支最新 commit SHA（release-cli 由 push master 触发，
+// master head 即最新二进制资产对应的源码 commit）。
+func FetchBranchHead(ctx context.Context, token, branch string) (string, error) {
+	sha, typ, err := gitRefObject(ctx, token, "heads/"+branch)
 	if err != nil {
 		return "", err
 	}
-	if typ == "tag" {
-		// annotated tag：tag 对象再指向 commit
-		sha, typ, err = gitTagObject(ctx, token, sha)
-		if err != nil {
-			return "", err
-		}
-	}
 	if typ != "commit" {
-		return "", fmt.Errorf("tag %s 指向 %s（非 commit），无法比对", tag, typ)
+		return "", fmt.Errorf("branch %s 指向 %s（非 commit）", branch, typ)
 	}
 	return sha, nil
 }
 
-// gitRefObject 查询 git ref（refs/tags/<tag>）指向的对象。
+// gitRefObject 查询 git ref（refs/heads/<branch> 或 refs/tags/<tag>）指向的对象。
 func gitRefObject(ctx context.Context, token, ref string) (sha, typ string, err error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/git/ref/%s", bbr.RepoFullName(), ref)
-	var resp struct {
-		Object struct {
-			SHA  string `json:"sha"`
-			Type string `json:"type"`
-		} `json:"object"`
-	}
-	if err := ghGetJSON(ctx, token, url, &resp); err != nil {
-		return "", "", err
-	}
-	return resp.Object.SHA, resp.Object.Type, nil
-}
-
-// gitTagObject 查询 annotated tag 对象指向的 commit。
-func gitTagObject(ctx context.Context, token, tagSha string) (sha, typ string, err error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/git/tags/%s", bbr.RepoFullName(), tagSha)
 	var resp struct {
 		Object struct {
 			SHA  string `json:"sha"`

@@ -575,7 +575,9 @@ func menuCheckUpdate(m Model) (Model, tea.Cmd) {
 }
 
 // checkTUIUpdate 检测 TUI 是否有新版本：对比本地注入 Commit 与远端
-// bbrv3-cli release 指向的 commit（固定 tag，每次 push 覆盖上传）。
+// master 分支最新 commit。bbrv3-cli 为固定 tag（tag 指针只在创建时固定，
+// 之后 push 仅覆盖上传资产），tag 指向的 commit 无法反映最新二进制，
+// 而 release-cli 由 push master 触发构建，master head 才是最新版本基准。
 func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string, hasUpdate bool, err error) {
 	log.Logf(i18n.T("update.checking"))
 	releases, err := fetchReleases(ctx, log)
@@ -584,31 +586,22 @@ func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string,
 	}
 	var found bool
 	for _, r := range releases {
-		if r.TagName == "bbrv3-cli" {
+		if r.TagName == "bbrv3-cli" && len(r.Assets) > 0 {
 			found = true
-			remoteCommit = r.TargetCommitish
 			break
 		}
 	}
 	if !found {
 		return "", false, errors.New(i18n.T("update.noRelease"))
 	}
-	// target_commitish 可能是分支名（如 "master"）：走 git ref API 拿真实 SHA
-	if !isFullSHA(remoteCommit) {
-		log.Logf(i18n.Tf("update.resolveTag", remoteCommit))
-		remoteCommit, err = netutil.FetchTagCommit(ctx, githubToken(), "bbrv3-cli")
-		if err != nil {
-			return "", false, errors.New(i18n.Tf("update.resolveFail", err))
-		}
+	// 拿 master 分支最新 commit（b 命令实际会下载到的版本）
+	log.Logf(i18n.T("update.fetchHead"))
+	remoteCommit, err = netutil.FetchBranchHead(ctx, githubToken(), "master")
+	if err != nil {
+		return "", false, errors.New(i18n.Tf("update.resolveFail", err))
 	}
-	short := func(s string) string {
-		if len(s) > 8 {
-			return s[:8]
-		}
-		return s
-	}
-	remote := short(remoteCommit)
-	local := short(Commit)
+	remote := shortCommit(remoteCommit)
+	local := shortCommit(Commit)
 	log.Logf(i18n.Tf("update.local", local))
 	log.Logf(i18n.Tf("update.remote", remote))
 	if local == "dev" {
@@ -629,19 +622,6 @@ func shortCommit(s string) string {
 		return s[:8]
 	}
 	return s
-}
-
-// isFullSHA 判断是否为 40 位 hex commit SHA（否则视为分支名）。
-func isFullSHA(s string) bool {
-	if len(s) != 40 {
-		return false
-	}
-	for _, c := range s {
-		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
-			return false
-		}
-	}
-	return true
 }
 
 // archAssetName 架构 → bbrv3-cli release 资产名。
