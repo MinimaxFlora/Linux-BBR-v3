@@ -10,7 +10,8 @@
 
 - 默认**自动模式**：直连 GitHub，失败自动依次尝试国内镜像（`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`），静默切换。
 - TUI 菜单 11「网络源设置」可切换自动 / 仅直连 / 固定镜像，持久化到 `/etc/bbrv3/mirror`；环境变量 `BBRV3_MIRROR` 优先级最高。
-- 覆盖 install.sh 首次安装、内核 `.deb` 下载、TUI 自更新与版本检测 API。
+- **版本检测改用 version.ini，完全绕开 GitHub API**（镜像无法代理 api.github.com，实测 403/404）：CI 构建时生成 version.ini（含 CLI commit 与最新内核版本），TUI 下载比对；内核安装按版本号直接构造下载 URL。
+- 覆盖 install.sh 首次安装、内核 `.deb` 下载、TUI 自更新与版本检测。
 
 ### ⚙️ 改进：TUI 内一键自更新
 
@@ -19,6 +20,7 @@
 
 ### 📌 历史更新
 
+- 2026-08-25：版本检测改用 version.ini（编译时生成，完全绕开 GitHub API），菜单 2 改为直接输入版本号
 - 2026-08-25：新增国内/国外网络源支持（自动切换镜像，菜单 11 可配置）
 - 2026-08-25：快捷命令 `b` 改名为 `bbr`，自动移除旧 `b`
 - 2026-08-25：`b` 快捷命令改为直接执行本地版本，更新走 TUI 菜单 10 自更新

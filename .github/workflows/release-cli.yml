@@ -41,13 +41,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          # 生成/更新 version.ini：更新 [cli] 节（保留旧 [kernel] 节）。
+          # version.ini 供 TUI 绕开 GitHub API 做版本检测（下载走镜像）。
+          gh release download bbrv3-cli -p version.ini --clobber -D . 2>/dev/null || true
+          [ -f version.ini ] || touch version.ini
+          {
+            echo "[cli]"
+            echo "commit=${GITHUB_SHA::8}"
+            echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > /tmp/cli.ini.new
+          awk '/^\[kernel\]/{f=1} f' version.ini > /tmp/kernel.ini.old || true
+          cat /tmp/cli.ini.new /tmp/kernel.ini.old > version.ini
+
           if gh release view bbrv3-cli >/dev/null 2>&1; then
-            gh release upload bbrv3-cli bbrv3-linux-amd64 bbrv3-linux-arm64 --clobber
+            gh release upload bbrv3-cli bbrv3-linux-amd64 bbrv3-linux-arm64 version.ini --clobber
             # 每次推送同步刷新 release 说明（固定 tag 无法比版本号，以说明记录更新历史）
             gh release edit bbrv3-cli --notes-file .github/RELEASE_NOTES_cli.md
           else
             gh release create bbrv3-cli \
               --title "BBRv3 Go TUI" \
               --notes-file .github/RELEASE_NOTES_cli.md \
-              bbrv3-linux-amd64 bbrv3-linux-arm64
+              bbrv3-linux-amd64 bbrv3-linux-arm64 version.ini
           fi

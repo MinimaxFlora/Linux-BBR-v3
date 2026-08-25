@@ -72,7 +72,8 @@ root で実行すると、まず以下を行います：
 - TUI メニュー 11「ネットワークソース設定」で切り替え可能：**自動**（推奨）/ GitHub 直結のみ / ミラー固定。選択は `/etc/bbrv3/mirror` に保存されます。
 - 環境変数 `BBRV3_MIRROR` が最優先：`auto`（自動）、`direct`（直結のみ）、またはミラー URL（例 `https://ghfast.top/`）。
 - `install.sh` にも対応：`BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`。
-- 対象：install.sh 初回インストール、カーネル `.deb` ダウンロード、メニュー 10 の TUI 自己更新、バージョン確認 API。
+- 対象：install.sh 初回インストール、カーネル `.deb` ダウンロード、メニュー 10 の TUI 自己更新。
+- **バージョン確認は GitHub API を完全に回避**：CI ビルド時に `version.ini`（bbrv3-cli release 資産。CLI ビルド commit と最新カーネルバージョンを含む）を生成し、TUI はそれを直接ダウンロードして比較します（ミラー経由）。国内ネットワークでも全て動作します。メニュー 2「指定バージョンのインストール」はバージョン番号を直接入力します（例 `7.2.0`）。
 
 ## 対応環境
 

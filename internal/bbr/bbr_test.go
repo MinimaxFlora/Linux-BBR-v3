@@ -73,9 +73,9 @@ func TestBufferCapMB(t *testing.T) {
 func TestCalcSmartBufferMB(t *testing.T) {
 	// 亚太档
 	cases := []struct {
-		bw      float64
+		bw       float64
 		overseas bool
-		want    int
+		want     int
 	}{
 		{100, false, 8},
 		{600, false, 12},

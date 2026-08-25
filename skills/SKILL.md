@@ -61,7 +61,7 @@ Go 1.26 + charmbracelet/bubbletea + lipgloss。`internal/` 各包职责：
 - 默认 **auto**：直连 GitHub，失败自动依次尝试 `gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`（ghproxy 风格：`<镜像>/<完整 URL>`），静默切换。
 - 配置优先级：环境变量 `BBRV3_MIRROR`（auto/direct/URL）> `/etc/bbrv3/mirror` > 默认 auto；TUI 菜单 11 可切换并持久化。
 - **安全**：走镜像的 API 请求不携带 token（第三方代理不接触用户凭据，公开仓库匿名可用）。
-- 覆盖：install.sh、内核 .deb 下载（netutil.Download）、自更新、版本检测 API（FetchReleases/ghGetJSON 均多源 fallback，API 业务错误如 rate limit 不换源）。
+- 覆盖：install.sh、内核 .deb 下载（netutil.Download）、自更新、版本检测（version.ini 下载比对，完全绕开 GitHub API）。
 
 ### 快捷命令 bbr
 
@@ -69,10 +69,15 @@ Go 1.26 + charmbracelet/bubbletea + lipgloss。`internal/` 各包职责：
 - 旧 `/usr/local/bin/b` 自动移除（迁移）。
 - **自更新（菜单 10）替换安装路径** `/usr/local/bin/bbr`（`os.Stat(QuickCommandPath)` 存在则替换它，否则退回 `os.Executable()`）；复制/替换用「写 `.new` + rename」原子操作。
 
-### 自更新检测
+### 自更新检测（version.ini，绕开 GitHub API）
 
-- 固定 tag `bbrv3-cli`（每次 push 覆盖上传），`Version` 硬编码 v1.0.0 → **无法比版本号，用 commit SHA**：本地 `Commit`（CI 注入 `GITHUB_SHA::8`）vs master head。
-- dev 构建（`Commit="dev"`）跳过比对。
+- CI 构建时生成 `version.ini`（bbrv3-cli release 资产，`[cli]` commit/built + `[kernel]` version），
+  **release-cli.yml 更新 [cli] 节、build.yml（仅 x86_64-standard 矩阵）更新 [kernel] 节**，各保留对方节。
+- TUI 下载 version.ini（走镜像）比对：本地 `Commit`（CI 注入 `GITHUB_SHA::8`）vs ini 的 `cli.commit`；
+  `Version` 硬编码 v1.0.0，无法比版本号。dev 构建（`Commit="dev"`）跳过比对。
+- 内核安装：菜单 1 读 ini 的 `kernel.version` → `bbr.KernelTagFor(arch, ver, profile)` 构造 tag →
+  `guessKernelAssets` 按 CI 产物规则构造 .deb URL → 下载（走镜像）；菜单 2 直接输入版本号。
+- **不再使用 GitHub API**（fetchReleases/FetchBranchHead/atom 已全部移除）。
 
 ### 启动流程
 

@@ -72,7 +72,8 @@ The program defaults to **auto mode**: it tries GitHub directly, and on failure 
 - TUI menu 11 "Network source settings" lets you switch between **Auto** (recommended) / GitHub direct only / a fixed mirror; the choice is persisted to `/etc/bbrv3/mirror`.
 - The `BBRV3_MIRROR` environment variable takes precedence: `auto`, `direct`, or a mirror URL (e.g. `https://ghfast.top/`).
 - `install.sh` supports it too: `BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`.
-- Covered: install.sh first install, kernel `.deb` downloads, TUI self-update (menu 10), and version-check APIs.
+- Covered: install.sh first install, kernel `.deb` downloads, TUI self-update (menu 10).
+- **Version checks bypass the GitHub API entirely**: CI generates `version.ini` (a `bbrv3-cli` release asset holding the CLI build commit and the latest kernel version); the TUI downloads and compares it directly (via mirror), so everything works on mainland networks. Menu 2 "Install a specific version" takes a version number directly (e.g. `7.2.0`).
 
 ## Supported Environments
 

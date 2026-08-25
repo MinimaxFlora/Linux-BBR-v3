@@ -288,6 +288,22 @@ jobs:
 
             Compiled & Optimized by MinimaxFlora.
 
+      - name: 更新 version.ini（内核最新版本）
+        if: env.BUILD_NEEDED == 'true' && env.PUBLISH_NEEDED == 'true' && matrix.arch == 'x86_64' && matrix.profile == 'standard'
+        run: |
+          set -euo pipefail
+          # 更新 version.ini 的 [kernel] 节（保留旧 [cli] 节）。
+          # version.ini 供 TUI 绕开 GitHub API 检测版本（下载走镜像）。
+          gh release download bbrv3-cli -p version.ini --clobber -D . 2>/dev/null || true
+          [ -f version.ini ] || touch version.ini
+          awk '/^\[cli\]/{f=1} f' version.ini > /tmp/cli.ini.old || true
+          {
+            echo "[kernel]"
+            echo "version=${{ env.KERNEL_VERSION }}"
+          } > /tmp/kernel.ini.new
+          cat /tmp/cli.ini.old /tmp/kernel.ini.new > version.ini
+          gh release upload bbrv3-cli version.ini --clobber
+
   update-config-baseline:
     needs: [preflight, build]
     if: ${{ always() && needs.preflight.outputs.build_needed == 'true' && needs.build.result == 'success' }}

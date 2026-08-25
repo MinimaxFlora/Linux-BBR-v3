@@ -72,7 +72,8 @@ root로 실행하면 먼저 다음을 수행합니다:
 - TUI 메뉴 11「네트워크 소스 설정」에서 전환 가능: **자동**(권장) / GitHub 직접 연결만 / 미러 고정. 선택은 `/etc/bbrv3/mirror`에 저장됩니다.
 - 환경 변수 `BBRV3_MIRROR`가 최우선: `auto`(자동), `direct`(직접 연결만), 또는 미러 URL(예: `https://ghfast.top/`).
 - `install.sh`도 지원: `BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`.
-- 적용 범위: install.sh 최초 설치, 커널 `.deb` 다운로드, 메뉴 10 TUI 자체 업데이트, 버전 확인 API.
+- 적용 범위: install.sh 최초 설치, 커널 `.deb` 다운로드, 메뉴 10 TUI 자체 업데이트.
+- **버전 확인은 GitHub API를 완전히 우회**: CI 빌드 시 `version.ini`(bbrv3-cli 릴리스 자산, CLI 빌드 커밋과 최신 커널 버전 포함)를 생성하고, TUI가 이를 직접 다운로드해 비교합니다(미러 경유). 국내 네트워크에서도 모두 동작합니다. 메뉴 2「특정 버전 설치」는 버전 번호를 직접 입력합니다(예: `7.2.0`).
 
 ## 지원 환경
 

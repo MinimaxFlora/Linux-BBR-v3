@@ -72,7 +72,8 @@ bbr
 - 在 TUI 菜单 11「网络源设置」可切换：**自动**（推荐）/ 仅直连 GitHub / 固定使用某个镜像，选择后写入 `/etc/bbrv3/mirror`。
 - 环境变量 `BBRV3_MIRROR` 优先级最高：`auto`（自动）、`direct`（仅直连）、或镜像 URL（如 `https://ghfast.top/`）。
 - `install.sh` 首次安装同样支持：`BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`。
-- 覆盖范围：install.sh 首次安装、TUI 内核 `.deb` 下载、菜单 10 TUI 自更新、版本检测 API。
+- 覆盖范围：install.sh 首次安装、TUI 内核 `.deb` 下载、菜单 10 TUI 自更新。
+- **版本检测完全绕开 GitHub API**：CI 构建时生成 `version.ini`（bbrv3-cli release 资产，含 CLI 构建 commit 与最新内核版本），TUI 直接下载比对（走镜像），国内网络全程可用。菜单 2「指定版本安装」直接输入版本号（如 `7.2.0`）即可。
 
 ## 支持环境
 

@@ -2,11 +2,8 @@ package app
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,14 +20,6 @@ import (
 
 // errManualBandwidth 测速失败，需要用户手动输入带宽。
 var errManualBandwidth = errors.New("speedtest failed")
-
-// githubToken 从环境读取 GitHub token（支持 GITHUB_TOKEN / GH_TOKEN）。
-func githubToken() string {
-	if t := os.Getenv("GITHUB_TOKEN"); t != "" {
-		return t
-	}
-	return os.Getenv("GH_TOKEN")
-}
 
 // currentEnv 返回当前环境（由 main 注入）。
 func currentEnv() *system.Env { return envSingleton }
@@ -74,7 +63,8 @@ func menuInstallLatest(m Model) (Model, tea.Cmd) {
 	})
 }
 
-// installLatestFlow 最新版安装流程（对应 install_latest_version）。
+// installLatestFlow 最新版安装流程：从 version.ini 读最新内核版本，
+// 构造 tag 与资产 URL 后下载安装（完全绕开 GitHub API，走镜像）。
 func installLatestFlow(ctx context.Context, log execx.Logger, profile bbr.Profile, installed *bool) error {
 	env := currentEnv()
 	if err := system.AssertSupportedKernelInstallSystem(ctx, env.OS); err != nil {
@@ -82,15 +72,15 @@ func installLatestFlow(ctx context.Context, log execx.Logger, profile bbr.Profil
 	}
 	log.Logf(i18n.Tf("install.getting", bbr.ProfileLabel(profile)))
 
-	releases, err := fetchReleases(ctx, log)
+	ini, err := netutil.FetchVersionINI(ctx)
 	if err != nil {
 		return err
 	}
-	latestTag := latestTagFor(releases, env.ArchFilter, profile)
-	if latestTag == "" {
-		return errors.New(i18n.Tf("install.noLatest", env.Arch, bbr.ProfileLabel(profile)))
+	if ini.KernelVersion == "" {
+		return errors.New(i18n.T("install.noVerIni"))
 	}
-	log.Logf(i18n.Tf("install.latestVer", latestTag))
+	tag := bbr.KernelTagFor(env.ArchFilter, ini.KernelVersion, profile)
+	log.Logf(i18n.Tf("install.latestVer", tag))
 
 	installedVer := system.InstalledKernelVersion(ctx, profile)
 	if installedVer == "" {
@@ -98,14 +88,14 @@ func installLatestFlow(ctx context.Context, log execx.Logger, profile bbr.Profil
 	} else {
 		log.Logf(i18n.Tf("install.installedV", installedVer))
 	}
-	expected := bbr.ExpectedInstalledVersion(latestTag, profile)
+	expected := bbr.ExpectedInstalledVersion(tag, profile)
 	if installedVer != "" && installedVer == expected {
 		log.Logf(i18n.Tf("install.upToDate", bbr.ProfileLabel(profile)))
 		return nil
 	}
 
 	log.Logf(i18n.T("install.foundNew"))
-	if err := downloadReleaseAssets(ctx, log, releases, latestTag); err != nil {
+	if err := downloadKernelAssets(ctx, log, tag); err != nil {
 		return err
 	}
 	if err := system.InstallPackages(ctx, log, "/tmp"); err != nil {
@@ -120,74 +110,46 @@ func installLatestFlow(ctx context.Context, log execx.Logger, profile bbr.Profil
 func menuInstallSpecific(m Model) (Model, tea.Cmd) {
 	return m.askProfile(func(p bbr.Profile) (Model, tea.Cmd) {
 		m.installProfile = p
-		var tags []string
-		var releases []netutil.Release
-		m, cmd := m.startTask(i18n.T("task.installVer"), func(ctx context.Context, log execx.Logger) error {
-			var err error
-			tags, releases, err = listMatchingTags(ctx, log, p)
-			return err
-		})
-		m.afterTask = func(m Model) (Model, tea.Cmd) {
-			if m.taskErr != nil {
-				return m.showResult(i18n.T("install.getFail"), m.taskErr.Error())
+		return m.askInput(i18n.T("version.askInput"), func(ver string) (Model, tea.Cmd) {
+			ver = strings.TrimSpace(ver)
+			if ver == "" {
+				return m.goMenu()
 			}
-			return m.askVersion(tags, func(tag string) (Model, tea.Cmd) {
-				var installed bool
-				m, cmd := m.startTask(i18n.Tf("task.installTag", tag), func(ctx context.Context, log execx.Logger) error {
-					return installTagFlow(ctx, log, releases, tag, &installed)
-				})
-				m.afterTask = func(m Model) (Model, tea.Cmd) {
-					if m.taskErr != nil {
-						return m.showResult(i18n.T("install.fail"), m.taskErr.Error())
-					}
-					if installed {
-						return m.askConfirm(i18n.T("install.rebootAsk"),
-							func(m Model) (Model, tea.Cmd) {
-								return m.startTask(i18n.T("task.reboot"), func(ctx context.Context, log execx.Logger) error {
-									return system.RebootSystem(ctx)
-								})
-							},
-							func(m Model) (Model, tea.Cmd) {
-								return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
-							})
-					}
-					return m.showResult(i18n.T("install.doneR"), i18n.T("install.done"))
-				}
-				return m, cmd
+			var installed bool
+			m, cmd := m.startTask(i18n.Tf("task.installVer"), func(ctx context.Context, log execx.Logger) error {
+				return installVersionFlow(ctx, log, p, ver, &installed)
 			})
-		}
-		return m, cmd
+			m.afterTask = func(m Model) (Model, tea.Cmd) {
+				if m.taskErr != nil {
+					return m.showResult(i18n.T("install.fail"), m.taskErr.Error())
+				}
+				if installed {
+					return m.askConfirm(i18n.T("install.rebootAsk"),
+						func(m Model) (Model, tea.Cmd) {
+							return m.startTask(i18n.T("task.reboot"), func(ctx context.Context, log execx.Logger) error {
+								return system.RebootSystem(ctx)
+							})
+						},
+						func(m Model) (Model, tea.Cmd) {
+							return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
+						})
+				}
+				return m.showResult(i18n.T("install.doneR"), i18n.T("install.done"))
+			}
+			return m, cmd
+		})
 	})
 }
 
-// listMatchingTags 获取并筛选当前架构匹配的 release tag 列表（升序）。
-func listMatchingTags(ctx context.Context, log execx.Logger, profile bbr.Profile) ([]string, []netutil.Release, error) {
+// installVersionFlow 下载并安装指定版本（版本号 → tag → 资产 URL，走镜像）。
+func installVersionFlow(ctx context.Context, log execx.Logger, profile bbr.Profile, ver string, installed *bool) error {
 	env := currentEnv()
 	if err := system.AssertSupportedKernelInstallSystem(ctx, env.OS); err != nil {
-		return nil, nil, err
+		return err
 	}
-	log.Logf(i18n.Tf("install.versionList", bbr.ProfileLabel(profile)))
-	releases, err := fetchReleases(ctx, log)
-	if err != nil {
-		return nil, nil, err
-	}
-	var tags []string
-	for _, r := range releases {
-		if bbr.TagMatchesProfile(r.TagName, env.ArchFilter, profile) {
-			tags = append(tags, r.TagName)
-		}
-	}
-	if len(tags) == 0 {
-		return nil, nil, errors.New(i18n.Tf("install.noVersion", bbr.ProfileLabel(profile)))
-	}
-	bbr.SortTagsByVersion(tags)
-	return tags, releases, nil
-}
-
-// installTagFlow 下载并安装指定 tag（对应 install_specific_version 后半段）。
-func installTagFlow(ctx context.Context, log execx.Logger, releases []netutil.Release, tag string, installed *bool) error {
+	tag := bbr.KernelTagFor(env.ArchFilter, ver, profile)
 	log.Logf(i18n.Tf("install.selected", tag))
-	if err := downloadReleaseAssets(ctx, log, releases, tag); err != nil {
+	if err := downloadKernelAssets(ctx, log, tag); err != nil {
 		return err
 	}
 	if err := system.InstallPackages(ctx, log, "/tmp"); err != nil {
@@ -566,18 +528,10 @@ func menuCheckUpdate(m Model) (Model, tea.Cmd) {
 			return m.showResult(i18n.T("update.devTitle"), i18n.Tf("update.devMsg", remoteCommit))
 		}
 		if !hasUpdate {
-			if remoteCommit == "" {
-				// 镜像比对降级：无 commit 信息
-				return m.showResult(i18n.T("update.latestTitle"), i18n.T("update.latestMirrorMsg"))
-			}
 			return m.showResult(i18n.T("update.latestTitle"), i18n.Tf("update.latestMsg", remoteCommit))
 		}
 		// 有更新：确认后直接在 TUI 内下载安装
-		prompt := i18n.Tf("update.confirmAsk", remoteCommit)
-		if remoteCommit == "" {
-			prompt = i18n.T("update.confirmAskMirror")
-		}
-		return m.askConfirm(prompt,
+		return m.askConfirm(i18n.Tf("update.confirmAsk", remoteCommit),
 			func(m Model) (Model, tea.Cmd) { return m.startSelfUpdate(assetName) },
 			func(m Model) (Model, tea.Cmd) {
 				return m.showResult(i18n.T("update.skippedTitle"), i18n.T("update.skippedMsg"))
@@ -586,35 +540,19 @@ func menuCheckUpdate(m Model) (Model, tea.Cmd) {
 	return m, cmd
 }
 
-// checkTUIUpdate 检测 TUI 是否有新版本：对比本地注入 Commit 与远端
-// master 分支最新 commit。bbrv3-cli 为固定 tag（tag 指针只在创建时固定，
-// 之后 push 仅覆盖上传资产），tag 指向的 commit 无法反映最新二进制，
-// 而 release-cli 由 push master 触发构建，master head 才是最新版本基准。
-// API 不可用时（如国内网络）降级为直接下载最新二进制与本地比对。
+// checkTUIUpdate 检测 TUI 是否有新版本：下载 version.ini（走镜像，绕开
+// GitHub API）拿 CLI 构建 commit，与本地注入 Commit 比对。bbrv3-cli 为固定
+// tag（每次 push 覆盖上传二进制与 version.ini），ini 的 commit 即最新版本基准。
 func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string, hasUpdate bool, err error) {
 	log.Logf(i18n.T("update.checking"))
-	releases, err := fetchReleases(ctx, log)
+	ini, err := netutil.FetchVersionINI(ctx)
 	if err != nil {
-		// API 不可用：降级（下载比对走镜像，国内可用）
-		return checkTUIUpdateByDownload(ctx, log)
+		return "", false, err
 	}
-	var found bool
-	for _, r := range releases {
-		if r.TagName == "bbrv3-cli" && len(r.Assets) > 0 {
-			found = true
-			break
-		}
+	remote := ini.CLICommit
+	if remote == "" {
+		return "", false, errors.New(i18n.T("update.noIni"))
 	}
-	if !found {
-		return "", false, errors.New(i18n.T("update.noRelease"))
-	}
-	// 拿 master 分支最新 commit（bbr 更新实际会下载到的版本）
-	log.Logf(i18n.T("update.fetchHead"))
-	remoteCommit, err = netutil.FetchBranchHead(ctx, githubToken(), "master")
-	if err != nil {
-		return "", false, errors.New(i18n.Tf("update.resolveFail", err))
-	}
-	remote := shortCommit(remoteCommit)
 	local := shortCommit(Commit)
 	log.Logf(i18n.Tf("update.local", local))
 	log.Logf(i18n.Tf("update.remote", remote))
@@ -628,77 +566,6 @@ func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string,
 		log.Logf(i18n.T("update.latest"))
 	}
 	return remote, hasUpdate, nil
-}
-
-// checkTUIUpdateByDownload API 不可用时的降级检测：直接下载 bbrv3-cli
-// 最新二进制与本地程序比对（相同=已最新，不同=有更新）。下载走镜像，国内可用。
-// 返回 remoteCommit=""（无 commit 信息，调用方用镜像比对文案）。
-func checkTUIUpdateByDownload(ctx context.Context, log execx.Logger) (remoteCommit string, hasUpdate bool, err error) {
-	log.Logf(i18n.T("update.degrade"))
-	assetName := archAssetName(currentEnv().Arch)
-	if assetName == "" {
-		return "", false, errors.New(i18n.Tf("update.noAsset", currentEnv().Arch))
-	}
-	exe, err := os.Executable()
-	if err != nil {
-		return "", false, errors.New(i18n.Tf("update.exeFail", err))
-	}
-	url := fmt.Sprintf("https://github.com/%s/releases/download/bbrv3-cli/%s", bbr.RepoFullName(), assetName)
-	tmp := filepath.Join(os.TempDir(), "bbrv3-latest")
-	_ = os.Remove(tmp)
-	log.Logf(i18n.Tf("update.downloading", assetName))
-	lastPct := 0
-	if err := netutil.Download(ctx, url, tmp, func(downloaded, total int64) {
-		if total <= 0 {
-			return
-		}
-		pct := int(downloaded * 100 / total)
-		if pct >= lastPct+5 || pct == 100 {
-			log.Logf(i18n.Tf("install.dlProgress", pct))
-			lastPct = pct
-		}
-	}); err != nil {
-		_ = os.Remove(tmp)
-		return "", false, err
-	}
-	defer os.Remove(tmp)
-
-	same, err := filesEqual(exe, tmp)
-	if err != nil {
-		return "", false, err
-	}
-	if same {
-		log.Logf(i18n.T("update.latest"))
-		return "", false, nil
-	}
-	log.Logf(i18n.T("update.newFound"))
-	return "", true, nil
-}
-
-// filesEqual 比较两个文件内容是否一致（sha256）。
-func filesEqual(a, b string) (bool, error) {
-	ha, err := hashFile(a)
-	if err != nil {
-		return false, err
-	}
-	hb, err := hashFile(b)
-	if err != nil {
-		return false, err
-	}
-	return ha == hb, nil
-}
-
-func hashFile(p string) (string, error) {
-	f, err := os.Open(p)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // shortCommit 截断 commit SHA 到 8 位（与 CI 注入的 GITHUB_SHA::8 对齐）。
@@ -736,30 +603,10 @@ func (m Model) startSelfUpdate(assetName string) (Model, tea.Cmd) {
 
 // updateSelfFlow 从 bbrv3-cli release 下载匹配架构的二进制并替换安装路径
 // /usr/local/bin/bbr（`bbr` 快捷命令直接执行它，下次运行即新版本）；
-// 未安装快捷命令时退回替换当前程序自身。
+// 未安装快捷命令时退回替换当前程序自身。资产 URL 按命名规则构造，绕开 GitHub API。
 func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) error {
-	releases, err := fetchReleases(ctx, log)
-	if err != nil {
-		return err
-	}
-	var url string
-	for _, r := range releases {
-		if r.TagName != "bbrv3-cli" {
-			continue
-		}
-		for _, a := range r.Assets {
-			if a.Name == assetName {
-				url = a.BrowserDownloadURL
-				break
-			}
-		}
-		break
-	}
-	if url == "" {
-		// API 降级（atom 无资产信息）：按命名规则构造 bbrv3-cli 资产 URL
-		url = fmt.Sprintf("https://github.com/%s/releases/download/bbrv3-cli/%s", bbr.RepoFullName(), assetName)
-	}
-	// 优先替换安装路径（b 直接执行的本地版本）；未安装 b 时替换当前程序
+	url := fmt.Sprintf("https://github.com/%s/releases/download/bbrv3-cli/%s", bbr.RepoFullName(), assetName)
+	// 优先替换安装路径（bbr 直接执行的本地版本）；未安装 bbr 时替换当前程序
 	target := bbr.QuickCommandPath
 	if _, err := os.Stat(target); err != nil {
 		exe, err := os.Executable()
@@ -771,7 +618,7 @@ func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) err
 	tmp := target + ".new"
 	log.Logf(i18n.Tf("update.downloading", assetName))
 	lastPct := 0
-	err = netutil.Download(ctx, url, tmp, func(downloaded, total int64) {
+	if err := netutil.Download(ctx, url, tmp, func(downloaded, total int64) {
 		if total <= 0 {
 			return
 		}
@@ -780,8 +627,7 @@ func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) err
 			log.Logf(i18n.Tf("install.dlProgress", pct))
 			lastPct = pct
 		}
-	})
-	if err != nil {
+	}); err != nil {
 		_ = os.Remove(tmp)
 		return errors.New(i18n.Tf("install.dlFail", assetName, err))
 	}
@@ -799,55 +645,12 @@ func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) err
 
 // ---------- 公共辅助 ----------
 
-// fetchReleases 获取 releases 并处理 API 错误（rate limit 提示）。
-func fetchReleases(ctx context.Context, log execx.Logger) ([]netutil.Release, error) {
-	releases, err := netutil.FetchReleases(ctx, githubToken())
-	if err != nil {
-		var apiErr *netutil.GitHubAPIError
-		if errors.As(err, &apiErr) {
-			log.Logf("GitHub API 返回错误：%s", apiErr.Message)
-			if apiErr.IsRateLimit() {
-				log.Logf(i18n.T("install.rateLimit"))
-			}
-			return nil, err
-		}
-		log.Logf(i18n.T("install.networkErr"))
-		return nil, err
-	}
-	return releases, nil
-}
-
-// latestTagFor 按发布时间取最新匹配 tag。
-func latestTagFor(releases []netutil.Release, arch string, profile bbr.Profile) string {
-	var latest string
-	var latestTime string
-	for _, r := range releases {
-		if !bbr.TagMatchesProfile(r.TagName, arch, profile) {
-			continue
-		}
-		if latest == "" || r.PublishedAt > latestTime {
-			latest = r.TagName
-			latestTime = r.PublishedAt
-		}
-	}
-	return latest
-}
-
-// downloadReleaseAssets 下载 release 中非 debug 资产到 /tmp（带进度日志）。
-func downloadReleaseAssets(ctx context.Context, log execx.Logger, releases []netutil.Release, tag string) error {
-	var assets []netutil.Asset
-	for _, r := range releases {
-		if r.TagName == tag {
-			assets = r.NonDebugAssets()
-			break
-		}
-	}
+// downloadKernelAssets 下载内核 release 的全部 .deb 资产到 /tmp（带进度日志）。
+// 资产 URL 按 CI 产物命名规则构造（绕开 GitHub API，下载走镜像）。
+func downloadKernelAssets(ctx context.Context, log execx.Logger, tag string) error {
+	assets := guessKernelAssets(tag)
 	if len(assets) == 0 {
-		// API 降级（atom 无资产信息）：按 CI 产物命名规则构造下载 URL
-		assets = guessKernelAssets(tag)
-		if len(assets) == 0 {
-			return errors.New(i18n.Tf("install.noAssets", tag))
-		}
+		return errors.New(i18n.Tf("install.noAssets", tag))
 	}
 
 	_ = execx.RunOK(ctx, "rm", "-f", "/tmp/linux-*.deb")
@@ -873,8 +676,8 @@ func downloadReleaseAssets(ctx context.Context, log execx.Logger, releases []net
 	return nil
 }
 
-// guessKernelAssets API 降级（atom 无资产信息）时按 CI 产物命名规则构造
-// 内核 release 资产（tag 如 x86_64-7.2.0 / arm64-7.2.0-max）。
+// guessKernelAssets 按 CI 产物命名规则构造内核 release 资产
+// （tag 如 x86_64-7.2.0 / arm64-7.2.0-max）。
 func guessKernelAssets(tag string) []netutil.Asset {
 	var arch, ver string
 	switch {

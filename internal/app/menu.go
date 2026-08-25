@@ -30,9 +30,9 @@ var menuItems = []menuEntry{
 
 // qdiscOptions 加速模式子菜单（原菜单 4-7 合并而来）。
 var qdiscOptions = []struct {
-	num   string
+	num      string
 	labelKey string
-	qdisc string
+	qdisc    string
 }{
 	{"1", "qdisc.item1", "fq"},
 	{"2", "qdisc.item2", "fq_codel"},
@@ -53,8 +53,6 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleConfirmKey(msg)
 	case PageInput:
 		return m.handleInputKey(msg)
-	case PageVersion:
-		return m.handleVersionKey(msg)
 	case PageMirror:
 		return m.handleMirrorKey(msg)
 	case PageResult:
@@ -205,46 +203,6 @@ func (m Model) handleInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.input, cmd = m.input.Update(msg)
 		return m, cmd
 	}
-}
-
-// handleVersionKey 版本选择：↑↓+Enter。
-func (m Model) handleVersionKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "q", "ctrl+c", "esc":
-		return m.goMenu()
-	case "up", "k":
-		if m.tagCursor > 0 {
-			m.tagCursor--
-		}
-		return m, nil
-	case "down", "j":
-		if m.tagCursor < len(m.tags)-1 {
-			m.tagCursor++
-		}
-		return m, nil
-	case "pgup":
-		m.tagCursor -= 5
-		if m.tagCursor < 0 {
-			m.tagCursor = 0
-		}
-		return m, nil
-	case "pgdown":
-		m.tagCursor += 5
-		if m.tagCursor > len(m.tags)-1 {
-			m.tagCursor = len(m.tags) - 1
-		}
-		return m, nil
-	case "enter":
-		if m.tagCB != nil && len(m.tags) > 0 {
-			return m.tagCB(m.tags[m.tagCursor])
-		}
-	}
-	// 数字键直接选择编号
-	if n, ok := parseNum(msg.String()); ok && n >= 1 && n <= len(m.tags) {
-		m.tagCursor = n - 1
-		return m.tagCB(m.tags[m.tagCursor])
-	}
-	return m, nil
 }
 
 // handleResultKey 结果页：esc 返回主菜单，enter/空格 返回主菜单，q 退出。

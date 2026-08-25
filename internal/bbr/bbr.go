@@ -205,6 +205,14 @@ func VersionFromTag(tag string) string {
 	return strings.TrimSuffix(v, "-max")
 }
 
+// KernelTagFor 构造内核 release tag：<arch>-<version>[-max]。
+func KernelTagFor(arch, version string, p Profile) string {
+	if p == ProfileMax {
+		return arch + "-" + version + "-max"
+	}
+	return arch + "-" + version
+}
+
 // KernelAssetNames 构造内核 release 的 .deb 资产名列表（与 build.yml 的
 // bindeb-pkg 产物一致）：linux-headers / linux-image 两个包。
 // version 为 tag 中的内核版本（如 "7.2.0"）；arch 为 tag 架构（x86_64/arm64）；

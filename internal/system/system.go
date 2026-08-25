@@ -5,8 +5,8 @@ package system
 
 import (
 	"bufio"
-	"errors"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
