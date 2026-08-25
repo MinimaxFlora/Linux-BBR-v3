@@ -98,6 +98,89 @@ func (r Release) NonDebugAssets() []Asset {
 	return out
 }
 
+// FetchTagCommit 获取 tag 指向的 commit SHA。
+// 固定 tag release 的 target_commitish 可能是分支名（如 "master"），
+// 需要走 git ref API 拿真实 SHA；annotated tag 需再解引用一次。
+func FetchTagCommit(ctx context.Context, token, tag string) (string, error) {
+	sha, typ, err := gitRefObject(ctx, token, "tags/"+tag)
+	if err != nil {
+		return "", err
+	}
+	if typ == "tag" {
+		// annotated tag：tag 对象再指向 commit
+		sha, typ, err = gitTagObject(ctx, token, sha)
+		if err != nil {
+			return "", err
+		}
+	}
+	if typ != "commit" {
+		return "", fmt.Errorf("tag %s 指向 %s（非 commit），无法比对", tag, typ)
+	}
+	return sha, nil
+}
+
+// gitRefObject 查询 git ref（refs/tags/<tag>）指向的对象。
+func gitRefObject(ctx context.Context, token, ref string) (sha, typ string, err error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/git/ref/%s", bbr.RepoFullName(), ref)
+	var resp struct {
+		Object struct {
+			SHA  string `json:"sha"`
+			Type string `json:"type"`
+		} `json:"object"`
+	}
+	if err := ghGetJSON(ctx, token, url, &resp); err != nil {
+		return "", "", err
+	}
+	return resp.Object.SHA, resp.Object.Type, nil
+}
+
+// gitTagObject 查询 annotated tag 对象指向的 commit。
+func gitTagObject(ctx context.Context, token, tagSha string) (sha, typ string, err error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/git/tags/%s", bbr.RepoFullName(), tagSha)
+	var resp struct {
+		Object struct {
+			SHA  string `json:"sha"`
+			Type string `json:"type"`
+		} `json:"object"`
+	}
+	if err := ghGetJSON(ctx, token, url, &resp); err != nil {
+		return "", "", err
+	}
+	return resp.Object.SHA, resp.Object.Type, nil
+}
+
+// ghGetJSON 通用 GitHub API GET（带 token），解析 JSON 到 out，处理 API 错误对象。
+func ghGetJSON(ctx context.Context, token, url string, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return err
+	}
+	var apiErr struct {
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.Message != "" {
+		return &GitHubAPIError{Message: apiErr.Message}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GitHub API 返回 HTTP %d", resp.StatusCode)
+	}
+	return json.Unmarshal(body, out)
+}
+
 // Download 下载 URL 到本地路径，进度回调（downloaded, total 字节；total 未知为 -1）。
 func Download(ctx context.Context, url, dest string, progress func(downloaded, total int64)) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

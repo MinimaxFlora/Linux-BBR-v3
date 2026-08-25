@@ -535,41 +535,71 @@ func menuExtremeMode(m Model) (Model, tea.Cmd) {
 // ---------- 菜单 10：检测 TUI 更新 ----------
 
 func menuCheckUpdate(m Model) (Model, tea.Cmd) {
-	var title, extra string
+	var (
+		remoteCommit string
+		hasUpdate    bool
+		assetName    string
+	)
 	m, cmd := m.startTask(i18n.T("task.checkUpdate"), func(ctx context.Context, log execx.Logger) error {
-		t, e, err := checkTUIUpdate(ctx, log)
+		rc, up, err := checkTUIUpdate(ctx, log)
 		if err != nil {
 			return err
 		}
-		title, extra = t, e
+		remoteCommit, hasUpdate = rc, up
+		if up {
+			assetName = archAssetName(currentEnv().Arch)
+			if assetName == "" {
+				return errors.New(i18n.Tf("update.noAsset", currentEnv().Arch))
+			}
+		}
 		return nil
 	})
 	m.afterTask = func(m Model) (Model, tea.Cmd) {
 		if m.taskErr != nil {
 			return m.showResult(i18n.T("update.titleFail"), m.taskErr.Error())
 		}
-		return m.showResult(title, extra)
+		if strings.EqualFold(shortCommit(Commit), "dev") {
+			return m.showResult(i18n.T("update.devTitle"), i18n.Tf("update.devMsg", remoteCommit))
+		}
+		if !hasUpdate {
+			return m.showResult(i18n.T("update.latestTitle"), i18n.Tf("update.latestMsg", remoteCommit))
+		}
+		// 有更新：确认后直接在 TUI 内下载安装
+		return m.askConfirm(i18n.Tf("update.confirmAsk", remoteCommit),
+			func(m Model) (Model, tea.Cmd) { return m.startSelfUpdate(assetName) },
+			func(m Model) (Model, tea.Cmd) {
+				return m.showResult(i18n.T("update.skippedTitle"), i18n.T("update.skippedMsg"))
+			})
 	}
 	return m, cmd
 }
 
 // checkTUIUpdate 检测 TUI 是否有新版本：对比本地注入 Commit 与远端
-// bbrv3-cli release 的 target_commitish（release 固定 tag，每次 push 覆盖上传）。
-func checkTUIUpdate(ctx context.Context, log execx.Logger) (title, extra string, err error) {
+// bbrv3-cli release 指向的 commit（固定 tag，每次 push 覆盖上传）。
+func checkTUIUpdate(ctx context.Context, log execx.Logger) (remoteCommit string, hasUpdate bool, err error) {
 	log.Logf(i18n.T("update.checking"))
 	releases, err := fetchReleases(ctx, log)
 	if err != nil {
-		return "", "", err
+		return "", false, err
 	}
-	var remoteCommit string
+	var found bool
 	for _, r := range releases {
 		if r.TagName == "bbrv3-cli" {
+			found = true
 			remoteCommit = r.TargetCommitish
 			break
 		}
 	}
-	if remoteCommit == "" {
-		return "", "", errors.New(i18n.T("update.noRelease"))
+	if !found {
+		return "", false, errors.New(i18n.T("update.noRelease"))
+	}
+	// target_commitish 可能是分支名（如 "master"）：走 git ref API 拿真实 SHA
+	if !isFullSHA(remoteCommit) {
+		log.Logf(i18n.Tf("update.resolveTag", remoteCommit))
+		remoteCommit, err = netutil.FetchTagCommit(ctx, githubToken(), "bbrv3-cli")
+		if err != nil {
+			return "", false, errors.New(i18n.Tf("update.resolveFail", err))
+		}
 	}
 	short := func(s string) string {
 		if len(s) > 8 {
@@ -582,14 +612,116 @@ func checkTUIUpdate(ctx context.Context, log execx.Logger) (title, extra string,
 	log.Logf(i18n.Tf("update.local", local))
 	log.Logf(i18n.Tf("update.remote", remote))
 	if local == "dev" {
-		return i18n.T("update.devTitle"), i18n.Tf("update.devMsg", remote), nil
+		return remote, false, nil
 	}
-	if strings.EqualFold(local, remote) {
+	hasUpdate = !strings.EqualFold(local, remote)
+	if hasUpdate {
+		log.Logf(i18n.T("update.newFound"))
+	} else {
 		log.Logf(i18n.T("update.latest"))
-		return i18n.T("update.latestTitle"), i18n.Tf("update.latestMsg", remote), nil
 	}
-	log.Logf(i18n.T("update.newFound"))
-	return i18n.T("update.newTitle"), i18n.Tf("update.newMsg", remote, local), nil
+	return remote, hasUpdate, nil
+}
+
+// shortCommit 截断 commit SHA 到 8 位（与 CI 注入的 GITHUB_SHA::8 对齐）。
+func shortCommit(s string) string {
+	if len(s) > 8 {
+		return s[:8]
+	}
+	return s
+}
+
+// isFullSHA 判断是否为 40 位 hex commit SHA（否则视为分支名）。
+func isFullSHA(s string) bool {
+	if len(s) != 40 {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+			return false
+		}
+	}
+	return true
+}
+
+// archAssetName 架构 → bbrv3-cli release 资产名。
+func archAssetName(arch string) string {
+	switch arch {
+	case "x86_64", "amd64":
+		return "bbrv3-linux-amd64"
+	case "arm64", "aarch64":
+		return "bbrv3-linux-arm64"
+	}
+	return ""
+}
+
+// startSelfUpdate 下载并替换当前运行的程序文件（Linux 下可安全覆盖运行中二进制）。
+func (m Model) startSelfUpdate(assetName string) (Model, tea.Cmd) {
+	m, cmd := m.startTask(i18n.T("task.updateNow"), func(ctx context.Context, log execx.Logger) error {
+		return updateSelfFlow(ctx, log, assetName)
+	})
+	m.afterTask = func(m Model) (Model, tea.Cmd) {
+		if m.taskErr != nil {
+			return m.showResult(i18n.T("update.updFail"), m.taskErr.Error())
+		}
+		return m.showResult(i18n.T("update.doneTitle"), i18n.T("update.doneMsg"))
+	}
+	return m, cmd
+}
+
+// updateSelfFlow 从 bbrv3-cli release 下载匹配架构的二进制并替换自身。
+func updateSelfFlow(ctx context.Context, log execx.Logger, assetName string) error {
+	releases, err := fetchReleases(ctx, log)
+	if err != nil {
+		return err
+	}
+	var url string
+	for _, r := range releases {
+		if r.TagName != "bbrv3-cli" {
+			continue
+		}
+		for _, a := range r.Assets {
+			if a.Name == assetName {
+				url = a.BrowserDownloadURL
+				break
+			}
+		}
+		break
+	}
+	if url == "" {
+		return errors.New(i18n.Tf("update.noAsset", assetName))
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return errors.New(i18n.Tf("update.exeFail", err))
+	}
+	tmp := exe + ".new"
+	log.Logf(i18n.Tf("update.downloading", assetName))
+	lastPct := 0
+	err = netutil.Download(ctx, url, tmp, func(downloaded, total int64) {
+		if total <= 0 {
+			return
+		}
+		pct := int(downloaded * 100 / total)
+		if pct >= lastPct+5 || pct == 100 {
+			log.Logf(i18n.Tf("install.dlProgress", pct))
+			lastPct = pct
+		}
+	})
+	if err != nil {
+		_ = os.Remove(tmp)
+		return errors.New(i18n.Tf("install.dlFail", assetName, err))
+	}
+	if err := os.Chmod(tmp, 0o755); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	if err := os.Rename(tmp, exe); err != nil {
+		_ = os.Remove(tmp)
+		return errors.New(i18n.Tf("update.replaceFail", err))
+	}
+	log.Logf(i18n.T("update.replaced"))
+	return nil
 }
 
 // ---------- 公共辅助 ----------
