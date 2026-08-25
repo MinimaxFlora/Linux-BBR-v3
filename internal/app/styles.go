@@ -40,14 +40,6 @@ var (
 	// 页面/面板标题（青色加粗）
 	headerStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(brandCyan))
 
-	// 顶部标题条（圆角边框窄条，宽度跟随内容——参考 OpenClaw 安装 TUI，不撑满、无整条背景）
-	topBarStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#e2e8f0")).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#4c3a8f")).
-			Padding(0, 1)
-
 	// 底栏按键高亮（粉色）
 	barKey = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(brandPink))
 
@@ -120,47 +112,9 @@ func gradientText(s, from, to string) string {
 }
 
 // logo 品牌渐变标识（粉 → 青）。
-func logo() string { return gradientText("✦ BBRv3 ✦", brandPink, brandCyan) }
+func logo() string { return gradientText("✦ BBRv3 Manager ✦", brandPink, brandCyan) }
 
-// ---------- 顶栏 / 底栏 ----------
-
-// topBar 顶部标题条：✦ BBRv3 ✦ v1.0.0  ❯ 页面标题  │  状态  │  🌐 语言。
-// 圆角边框窄条（宽度跟随内容）；单行超过终端宽度时依次省略状态段、语言段。
-func (m Model) topBar(pageTitle string) string {
-	left := logo() + " " + badgeStyle.Render(Version)
-	if pageTitle != "" {
-		left += dim("  ❯  ") + headerStyle.Render(pageTitle)
-	}
-
-	env := currentEnv()
-	algo := env.CurrentAlgo
-	if algo == "" {
-		algo = "—"
-	}
-	algoVal := green(algo)
-	if algo != "bbr" && algo != "—" {
-		algoVal = yellow(algo)
-	}
-	qdisc := env.CurrentQdisc
-	if qdisc == "" {
-		qdisc = "—"
-	}
-	state := fmt.Sprintf("%s: %s  %s: %s  %s: %s",
-		shortLabel(i18n.T("menu.algoShort")), algoVal,
-		shortLabel(i18n.T("menu.qdiscShort")), green(qdisc),
-		shortLabel(i18n.T("menu.kernelShort")), cyan(kernelVersionHint()))
-	lang := "🌐 " + langLabel()
-
-	full := left + dim("   │   ") + state + dim("   │   ") + lang
-	if m.width <= 0 || lipgloss.Width(full) <= m.width-4 {
-		return topBarStyle.Render(full)
-	}
-	mid := left + dim("   │   ") + lang
-	if lipgloss.Width(mid) <= m.width-4 {
-		return topBarStyle.Render(mid)
-	}
-	return topBarStyle.Render(left)
-}
+// ---------- 底栏 ----------
 
 // bottomBar 底部快捷键：粉色按键 + 灰色说明，上方短分隔线（跟随内容宽，不撑满）。
 func (m Model) bottomBar(keys ...[2]string) string {

@@ -32,11 +32,9 @@ func (m Model) View() string {
 	return ""
 }
 
-// pageFrame 标准子页面框架：全宽顶栏（标题面包屑） + 内容卡 + 全宽底栏。
-func (m Model) pageFrame(title, content string, keys ...[2]string) string {
+// pageFrame 标准子页面框架：内容卡 + 底栏（标题已含在卡片内）。
+func (m Model) pageFrame(content string, keys ...[2]string) string {
 	var b strings.Builder
-	b.WriteString(m.topBar(title))
-	b.WriteString("\n\n")
 	b.WriteString(m.renderCard(content))
 	b.WriteString("\n\n")
 	b.WriteString(m.bottomBar(keys...))
@@ -44,7 +42,7 @@ func (m Model) pageFrame(title, content string, keys ...[2]string) string {
 	return b.String()
 }
 
-// viewBoot 启动任务页（顶栏 + 初始化卡片，无交互按键）。。
+// viewBoot 启动任务页（初始化卡片，无交互按键）。
 func (m Model) viewBoot() string {
 	var lines []string
 	lines = append(lines, cyan(i18n.T("boot.init")))
@@ -53,12 +51,7 @@ func (m Model) viewBoot() string {
 		lines = append(lines, logsColored(m.logs)...)
 	}
 	lines = append(lines, "", pink(m.spinner.View())+"  "+dim(i18n.T("boot.waiting")))
-	var b strings.Builder
-	b.WriteString(m.topBar(""))
-	b.WriteString("\n\n")
-	b.WriteString(m.renderCard(strings.Join(lines, "\n")))
-	b.WriteString("\n")
-	return b.String()
+	return m.renderCard(strings.Join(lines, "\n")) + "\n"
 }
 
 // viewMenu 主菜单：信息卡 + 菜单卡 + 底栏。
@@ -77,11 +70,13 @@ func (m Model) viewMenu() string {
 		qdiscVal = dim("—")
 	}
 
-	// 信息卡：欢迎语 / 作者·项目 / 状态（竖排分区）
+	// 信息卡：品牌 logo+版本 / 欢迎语 / 作者·博客·项目 / 状态（竖排分区）
 	info := joinSections(0,
+		[]string{logo() + "  " + badgeStyle.Render(Version)},
 		[]string{dim("✧  ") + bold(i18n.T("boot.title"))},
 		[]string{
 			pink("♥  ") + dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
+			cyan("📝  ") + dim(i18n.T("menu.blog")+"：") + itemStyle.Render(i18n.T("menu.blogUrl")),
 			cyan("◆  ") + dim(i18n.T("menu.repoLabel")+"：") + itemStyle.Render(i18n.T("menu.repoUrl")),
 		},
 		statusRows(algoVal, qdiscVal, cyan(kernelVersionHint())),
@@ -98,8 +93,6 @@ func (m Model) viewMenu() string {
 	)
 
 	var b strings.Builder
-	b.WriteString(m.topBar(""))
-	b.WriteString("\n\n")
 	b.WriteString(m.renderCard(info))
 	b.WriteString("\n\n")
 	b.WriteString(m.renderCard(menu))
@@ -125,7 +118,7 @@ func (m Model) viewQdisc() string {
 		[]string{cardTitle("⚡ " + i18n.T("qdisc.title"))},
 		strings.Split(renderItems(rows, m.qdiscCursor), "\n"),
 	)
-	return m.pageFrame("⚡ "+i18n.T("qdisc.title"), content,
+	return m.pageFrame(content,
 		[2]string{"↑/↓", i18n.T("help.select")},
 		[2]string{"1-4", i18n.T("help.run")},
 		[2]string{"Enter", i18n.T("help.confirm")},
@@ -148,7 +141,7 @@ func (m Model) viewProfile() string {
 		[]string{cardTitle(i18n.T("profile.title"))},
 		lines,
 	)
-	return m.pageFrame(i18n.T("profile.title"), content,
+	return m.pageFrame(content,
 		[2]string{"↑/↓", i18n.T("help.select")},
 		[2]string{"Enter", i18n.T("help.confirm")},
 		[2]string{"Esc", i18n.T("help.back")},
@@ -167,7 +160,7 @@ func (m Model) viewConfirm() string {
 		[]string{cardTitle(i18n.T("confirm.title"))},
 		lines,
 	)
-	return m.pageFrame(i18n.T("confirm.title"), content,
+	return m.pageFrame(content,
 		[2]string{"y", i18n.T("help.yes")},
 		[2]string{"n", i18n.T("help.no")},
 		[2]string{"Esc", i18n.T("help.cancel")},
@@ -188,7 +181,7 @@ func (m Model) viewInput() string {
 		[]string{cardTitle(i18n.T("menu.item7"))},
 		lines,
 	)
-	return m.pageFrame(i18n.T("menu.item7"), content,
+	return m.pageFrame(content,
 		[2]string{"Enter", i18n.T("help.submit")},
 		[2]string{"Esc", i18n.T("help.back")},
 	)
@@ -218,7 +211,7 @@ func (m Model) viewVersion() string {
 		[]string{cardTitle(i18n.T("version.title"))},
 		lines,
 	)
-	return m.pageFrame(i18n.T("version.title"), content,
+	return m.pageFrame(content,
 		[2]string{"↑/↓", i18n.T("help.select")},
 		[2]string{"Num", i18n.T("help.jump")},
 		[2]string{"Enter", i18n.T("help.install")},
@@ -258,7 +251,7 @@ func (m Model) viewLog() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(m.topBar(m.logTitle))
+	b.WriteString(headerStyle.Render(m.logTitle))
 	b.WriteString("\n\n")
 	if hasPct {
 		b.WriteString(progressBar(pct, barWidth(m.width)))
@@ -298,8 +291,6 @@ func (m Model) viewResult() string {
 	}
 
 	var b strings.Builder
-	b.WriteString(m.topBar(m.resultTitle))
-	b.WriteString("\n\n")
 	b.WriteString(resultBanner(m.resultTitle, m.taskErr != nil))
 	b.WriteString("\n\n")
 	b.WriteString(m.renderCard(strings.TrimSuffix(body.String(), "\n")))
