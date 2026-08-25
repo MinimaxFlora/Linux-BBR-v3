@@ -76,10 +76,25 @@ func installLatestFlow(ctx context.Context, log execx.Logger, profile bbr.Profil
 	if err != nil {
 		return err
 	}
-	if ini.KernelVersion == "" {
-		return errors.New(i18n.T("install.noVerIni"))
+	ver := ini.KernelVersion
+	if ver == "" {
+		// ini 缺内核版本（如 CI 尚未刷新 [kernel] 节）：回退从 releases.atom 取最新
+		log.Logf(i18n.T("install.verIniFallback"))
+		tags, err := netutil.FetchReleaseTags(ctx)
+		if err != nil {
+			return errors.New(i18n.T("install.noVerIni"))
+		}
+		for _, t := range tags { // atom 顺序为最新在前
+			if bbr.TagMatchesProfile(t, env.ArchFilter, profile) {
+				ver = bbr.VersionFromTag(t)
+				break
+			}
+		}
+		if ver == "" {
+			return errors.New(i18n.Tf("install.noLatest", env.Arch, bbr.ProfileLabel(profile)))
+		}
 	}
-	tag := bbr.KernelTagFor(env.ArchFilter, ini.KernelVersion, profile)
+	tag := bbr.KernelTagFor(env.ArchFilter, ver, profile)
 	log.Logf(i18n.Tf("install.latestVer", tag))
 
 	installedVer := system.InstalledKernelVersion(ctx, profile)
