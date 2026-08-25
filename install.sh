@@ -4,10 +4,12 @@
 # 自动检测架构 → 从 bbrv3-cli release 下载最新 Go TUI 二进制 → 执行
 #
 # 用法：
-#   bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)
+#   bash <(curl -fsSL https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master/install.sh)
 #   或（sh/dash 亦可，脚本会自动切换到 bash 执行）：
-#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)"
+#   sh -c "$(curl -fsSL https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master/install.sh)"
 #
+# 注：使用 github.com 的 raw/refs/heads/master 路径（页面域缓存即时）；
+#     raw.githubusercontent.com 的 CDN 缓存可能滞后，获取到旧版脚本。
 # 首次运行后程序会自动安装 `bbr` 快捷命令，之后可直接输入 bbr 运行。
 
 # 本脚本使用 bash 特性（set -o pipefail、数组等）。
@@ -18,9 +20,9 @@ if [ -z "${BASH_VERSION:-}" ]; then
         if [ -f "$0" ] && [ -r "$0" ]; then
             exec bash "$0" "$@"
         fi
-        exec bash -c "$(curl -fsSL "https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh")"
+        exec bash -c "$(curl -fsSL "https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master/install.sh")"
     fi
-    echo "检测到当前未使用 bash，且系统未安装 bash。请改用：bash <(curl -fsSL https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master/install.sh)" >&2
+    echo "检测到当前未使用 bash，且系统未安装 bash。请改用：bash <(curl -fsSL https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master/install.sh)" >&2
     exit 1
 fi
 

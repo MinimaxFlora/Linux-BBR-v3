@@ -19,7 +19,7 @@ Debian/Ubuntu VPS 向けの BBRv3 カーネル導入 & ネットワーク加速�
 > GitHub ソース（海外環境またはプロキシ環境向け）
 
 ```sh
-export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && sh -c "$(curl -fsSL $url/install.sh)"
 ```
 
@@ -35,7 +35,7 @@ export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' 
 > GitHub ソース
 
 ```sh
-export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
   && sh /tmp/install.sh
 ```

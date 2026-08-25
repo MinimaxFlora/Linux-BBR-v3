@@ -19,7 +19,7 @@ Debian/Ubuntu VPS용 BBRv3 커널 설치 및 네트워크 가속 관리 프로�
 > GitHub 소스(해외 환경 또는 프록시 환경 권장)
 
 ```sh
-export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && sh -c "$(curl -fsSL $url/install.sh)"
 ```
 
@@ -35,7 +35,7 @@ export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' 
 > GitHub 소스
 
 ```sh
-export url='https://raw.githubusercontent.com/MinimaxFlora/Linux-BBR-v3/master' \
+export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
   && sh /tmp/install.sh
 ```
