@@ -35,10 +35,33 @@ trap 'rm -rf "$TMPDIR"' EXIT
 BIN="$TMPDIR/bbrv3"
 URL="https://github.com/$REPO/releases/download/$CLI_TAG/$ASSET"
 
+# 下载源：BBRV3_MIRROR 环境变量可指定（direct=仅直连 / auto=自动 / URL=固定镜像），
+# 默认自动：直连 GitHub 失败后依次尝试国内镜像（ghproxy 风格：<镜像>/<完整 URL>）。
+MIRRORS=()
+case "${BBRV3_MIRROR:-auto}" in
+    direct)
+        MIRRORS=("")
+        ;;
+    auto|"")
+        MIRRORS=("" "https://gh-proxy.kejizero.xyz/" "https://gh-proxy.com/" "https://ghfast.top/")
+        ;;
+    *)
+        MIRRORS=("$BBRV3_MIRROR")
+        ;;
+esac
+
 echo -e "\033[36m正在下载 BBRv3 管理程序（${ARCH}）...\033[0m"
-if ! curl -fsSL -o "$BIN" "$URL"; then
+downloaded=0
+for m in "${MIRRORS[@]}"; do
+    if curl -fsSL -o "$BIN" "${m}${URL}"; then
+        downloaded=1
+        break
+    fi
+done
+if [ "$downloaded" -ne 1 ]; then
     echo -e "\033[31m下载失败：$URL\033[0m" >&2
     echo -e "\033[33m请检查网络连接，或确认 $CLI_TAG release 已发布。\033[0m" >&2
+    echo -e "\033[33m国内环境可设置 BBRV3_MIRROR=https://ghfast.top/ 指定镜像后重试。\033[0m" >&2
     exit 1
 fi
 

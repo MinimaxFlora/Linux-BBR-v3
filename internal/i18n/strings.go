@@ -42,6 +42,7 @@ var zhStrings = map[string]string{
 	"menu.item8":   "清空网络优化配置",
 	"menu.item9":   "BBR v3 疯批模式（极限测速挑战）",
 	"menu.item10":  "检测 TUI 更新",
+	"menu.item11":  "网络源设置（国内/国外）",
 
 	// ---- 内核类型选择 ----
 	"profile.title":  "请选择要安装的内核类型",
@@ -122,6 +123,16 @@ var zhStrings = map[string]string{
 	"task.clear":         "清空网络优化配置",
 	"task.extreme":       "BBR v3 疯批模式",
 	"task.reboot":        "系统即将重启...",
+
+	// ---- 网络源设置（国内/国外）----
+	"mirror.title":      "网络源设置",
+	"mirror.auto":       "自动（直连 GitHub，失败自动切换镜像）",
+	"mirror.direct":     "仅直连 GitHub",
+	"mirror.current":    "（当前）",
+	"mirror.help":       "↑/↓ 选择 · 数字键直接选择 · Enter 确认 · Esc 返回 · q 退出",
+	"mirror.savedTitle": "✔ 网络源已更新",
+	"mirror.savedMsg":   "已切换为：%s",
+	"mirror.failTitle":  "❌ 网络源设置失败",
 
 	// ---- 安装流程 ----
 	"install.getting":     "正在从 GitHub 获取 %s 最新版本信息...",
@@ -370,6 +381,7 @@ var enStrings = map[string]string{
 	"menu.item8":   "Clear network optimization config",
 	"menu.item9":   "BBR v3 extreme mode (max speed test)",
 	"menu.item10":  "Check for TUI updates",
+	"menu.item11":  "Network source settings (CN/global)",
 
 	// ---- Profile ----
 	"profile.title": "Select kernel type",
@@ -450,6 +462,16 @@ var enStrings = map[string]string{
 	"task.clear":         "Clear network optimization config",
 	"task.extreme":       "BBR v3 extreme mode",
 	"task.reboot":        "System is rebooting...",
+
+	// ---- Network source settings (CN/global) ----
+	"mirror.title":      "Network source settings",
+	"mirror.auto":       "Auto (GitHub direct, fallback to mirrors)",
+	"mirror.direct":     "GitHub direct only",
+	"mirror.current":    "(current)",
+	"mirror.help":       "↑/↓ select  ·  number to choose  ·  Enter confirm  ·  Esc back  ·  q quit",
+	"mirror.savedTitle": "✔ Network source updated",
+	"mirror.savedMsg":   "Switched to: %s",
+	"mirror.failTitle":  "❌ Failed to set network source",
 
 	// ---- Install ----
 	"install.getting":     "Fetching latest %s info from GitHub...",

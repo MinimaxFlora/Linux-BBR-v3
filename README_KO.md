@@ -34,6 +34,15 @@ root로 실행하면 먼저 다음을 수행합니다:
 
 그런 다음 대화형 메뉴로 진입합니다.
 
+## 중국 국내 네트워크 지원
+
+기본값은 **자동 모드**: GitHub 직접 연결을 시도하고, 실패하면 국내 미러(`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`)를 순서대로 자동 시도합니다(조용히 전환).
+
+- TUI 메뉴 11「네트워크 소스 설정」에서 전환 가능: **자동**(권장) / GitHub 직접 연결만 / 미러 고정. 선택은 `/etc/bbrv3/mirror`에 저장됩니다.
+- 환경 변수 `BBRV3_MIRROR`가 최우선: `auto`(자동), `direct`(직접 연결만), 또는 미러 URL(예: `https://ghfast.top/`).
+- `install.sh`도 지원: `BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`.
+- 적용 범위: install.sh 최초 설치, 커널 `.deb` 다운로드, 메뉴 10 TUI 자체 업데이트, 버전 확인 API.
+
 ## 지원 환경
 
 | 항목 | 요구 사항 |
@@ -64,6 +73,7 @@ Debian testing/unstable에서 `VERSION_ID`가 없는 경우 `VERSION_CODENAME`�
  8. 🧹 네트워크 최적화 설정 초기화
  9. 🧨 BBR v3 매니악 모드(극한 속도 테스트 챌린지)
 10. 🔄 TUI 업데이트 확인
+11. 🌐 네트워크 소스 설정(국내/해외)
 ```
 
 일반적인 흐름:
@@ -76,6 +86,7 @@ Debian testing/unstable에서 `VERSION_ID`가 없는 경우 `VERSION_CODENAME`�
 6. 회선 파라미터가 불확실하면 `7`로 자동 속도 측정 후 대역폭 구간에 따라 TCP 버퍼를 계산합니다.
 7. 자체 회선의 극한 속도 테스트 챌린지에는 `9`로 공격적인 송신율 파라미터를 적용합니다.
 8. 튜닝을 되돌리려면 `8`로 프로그램이 작성한 네트워크 최적화 설정을 초기화합니다.
+9. GitHub 접속이 불안정하면 `11`로 네트워크 소스를 전환합니다(자동 / 미러).
 
 ## 커널 및 BBR 정책
 

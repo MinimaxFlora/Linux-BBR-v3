@@ -34,6 +34,15 @@ When running as root, the program first:
 
 Then the interactive menu starts.
 
+## China Mainland Network Support
+
+The program defaults to **auto mode**: it tries GitHub directly, and on failure silently falls back to mainland China mirror sources in order (`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`).
+
+- TUI menu 11 "Network source settings" lets you switch between **Auto** (recommended) / GitHub direct only / a fixed mirror; the choice is persisted to `/etc/bbrv3/mirror`.
+- The `BBRV3_MIRROR` environment variable takes precedence: `auto`, `direct`, or a mirror URL (e.g. `https://ghfast.top/`).
+- `install.sh` supports it too: `BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`.
+- Covered: install.sh first install, kernel `.deb` downloads, TUI self-update (menu 10), and version-check APIs.
+
 ## Supported Environments
 
 | Item | Requirement |
@@ -64,6 +73,7 @@ The current kernel mainline for this project is Linux 7.x. When installing a ker
  8. 🧹 Clear network optimization settings
  9. 🧨 BBR v3 maniac mode (extreme speedtest challenge)
 10. 🔄 Check for TUI updates
+11. 🌐 Network source settings (CN/global)
 ```
 
 Typical workflow:
@@ -76,6 +86,7 @@ Typical workflow:
 6. If you are unsure about link parameters, select `7` for an automatic speedtest and TCP buffer sizing by bandwidth tier.
 7. For extreme speedtest challenges on your own link, select `9` to apply aggressive pacing parameters.
 8. To roll back tuning, select `8` to clear the network optimization settings written by the program.
+9. If GitHub is unstable from your network, select `11` to switch the network source (auto / mirror).
 
 ## Kernel & BBR Policy
 

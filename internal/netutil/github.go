@@ -4,6 +4,7 @@ package netutil
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,14 +46,32 @@ func (e *GitHubAPIError) IsRateLimit() bool {
 
 // FetchReleases 获取仓库全部 releases（对应原 gh_api_get + check_release_api_response）。
 // token 为空时匿名请求。返回错误可能是 *GitHubAPIError。
+// 直连失败时自动依次尝试镜像源（API 业务错误如 rate limit 不换源）。
 func FetchReleases(ctx context.Context, token string) ([]Release, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", bbr.RepoFullName())
+	base := fmt.Sprintf("https://api.github.com/repos/%s/releases", bbr.RepoFullName())
+	var errs []string
+	for _, u := range candidateURLs(base) {
+		releases, err := fetchReleasesOnce(ctx, token, u)
+		if err == nil {
+			return releases, nil
+		}
+		var apiErr *GitHubAPIError
+		if errors.As(err, &apiErr) {
+			return nil, err
+		}
+		errs = append(errs, fmt.Sprintf("%s: %v", u, err))
+	}
+	return nil, fmt.Errorf("获取 release 失败：%s", strings.Join(errs, "; "))
+}
+
+func fetchReleasesOnce(ctx context.Context, token, url string) ([]Release, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	if token != "" {
+	// 镜像请求不携带 token（第三方代理不应收到用户凭据；公开仓库匿名可用）
+	if token != "" && !IsMirrorURL(url) {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
@@ -127,13 +146,31 @@ func gitRefObject(ctx context.Context, token, ref string) (sha, typ string, err 
 }
 
 // ghGetJSON 通用 GitHub API GET（带 token），解析 JSON 到 out，处理 API 错误对象。
+// 直连失败时自动依次尝试镜像源（API 业务错误不换源）。
 func ghGetJSON(ctx context.Context, token, url string, out any) error {
+	var errs []string
+	for _, u := range candidateURLs(url) {
+		err := ghGetJSONOnce(ctx, token, u, out)
+		if err == nil {
+			return nil
+		}
+		var apiErr *GitHubAPIError
+		if errors.As(err, &apiErr) {
+			return err
+		}
+		errs = append(errs, fmt.Sprintf("%s: %v", u, err))
+	}
+	return fmt.Errorf("请求失败：%s", strings.Join(errs, "; "))
+}
+
+func ghGetJSONOnce(ctx context.Context, token, url string, out any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	if token != "" {
+	// 镜像请求不携带 token（第三方代理不应收到用户凭据；公开仓库匿名可用）
+	if token != "" && !IsMirrorURL(url) {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	client := &http.Client{Timeout: 60 * time.Second}
@@ -159,7 +196,21 @@ func ghGetJSON(ctx context.Context, token, url string, out any) error {
 }
 
 // Download 下载 URL 到本地路径，进度回调（downloaded, total 字节；total 未知为 -1）。
+// 直连失败时自动依次尝试镜像源（静默切换，全部失败返回汇总错误）。
 func Download(ctx context.Context, url, dest string, progress func(downloaded, total int64)) error {
+	var errs []string
+	for _, u := range candidateURLs(url) {
+		err := downloadOnce(ctx, u, dest, progress)
+		if err == nil {
+			return nil
+		}
+		_ = os.Remove(dest) // 清理失败源的残留文件
+		errs = append(errs, fmt.Sprintf("%s: %v", u, err))
+	}
+	return fmt.Errorf("所有下载源均失败：%s", strings.Join(errs, "; "))
+}
+
+func downloadOnce(ctx context.Context, url, dest string, progress func(downloaded, total int64)) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err

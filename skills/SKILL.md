@@ -52,8 +52,16 @@ Go 1.26 + charmbracelet/bubbletea + lipgloss。`internal/` 各包职责：
 8. 清空网络优化配置
 9. BBR v3 疯批模式（极限测速挑战）
 10. 检测 TUI 更新
+11. 网络源设置（国内/国外）
 
-按键：数字 1-10 直接执行、`↑/↓`+Enter 选择、`L` 中英切换、`q` 退出；子页面 `Esc` 返回主菜单（不退出）。
+按键：数字 1-11 直接执行、`↑/↓`+Enter 选择、`L` 中英切换、`q` 退出；子页面 `Esc` 返回主菜单（不退出）。
+
+### 国内/国外网络源（镜像）
+
+- 默认 **auto**：直连 GitHub，失败自动依次尝试 `gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`（ghproxy 风格：`<镜像>/<完整 URL>`），静默切换。
+- 配置优先级：环境变量 `BBRV3_MIRROR`（auto/direct/URL）> `/etc/bbrv3/mirror` > 默认 auto；TUI 菜单 11 可切换并持久化。
+- **安全**：走镜像的 API 请求不携带 token（第三方代理不接触用户凭据，公开仓库匿名可用）。
+- 覆盖：install.sh、内核 .deb 下载（netutil.Download）、自更新、版本检测 API（FetchReleases/ghGetJSON 均多源 fallback，API 业务错误如 rate limit 不换源）。
 
 ### 快捷命令 bbr
 

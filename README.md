@@ -34,6 +34,15 @@ bbr
 
 然后进入交互菜单。
 
+## 国内网络支持
+
+程序默认**自动模式**：直连 GitHub，失败时自动依次尝试国内镜像源（`gh-proxy.kejizero.xyz` / `gh-proxy.com` / `ghfast.top`），静默切换不打扰。
+
+- 在 TUI 菜单 11「网络源设置」可切换：**自动**（推荐）/ 仅直连 GitHub / 固定使用某个镜像，选择后写入 `/etc/bbrv3/mirror`。
+- 环境变量 `BBRV3_MIRROR` 优先级最高：`auto`（自动）、`direct`（仅直连）、或镜像 URL（如 `https://ghfast.top/`）。
+- `install.sh` 首次安装同样支持：`BBRV3_MIRROR=https://ghfast.top/ bash <(curl ...)`。
+- 覆盖范围：install.sh 首次安装、TUI 内核 `.deb` 下载、菜单 10 TUI 自更新、版本检测 API。
+
 ## 支持环境
 
 | 项目 | 要求 |
@@ -64,6 +73,7 @@ Debian testing/unstable 如果缺少 `VERSION_ID`，程序会按 `VERSION_CODENA
  8. 🧹 清空网络优化配置
  9. 🧨 BBR v3 疯批模式（极限测速挑战）
 10. 🔄 检测 TUI 更新
+11. 🌐 网络源设置（国内/国外）
 ```
 
 常用流程：
@@ -76,6 +86,7 @@ Debian testing/unstable 如果缺少 `VERSION_ID`，程序会按 `VERSION_CODENA
 6. 不确定线路参数时可选择 `7` 自动测速并按带宽档位计算 TCP 缓冲区。
 7. 做自有链路极限测速挑战时可选择 `9` 写入激进冲速率参数。
 8. 需要撤回调优时可选择 `8` 清空程序写入的网络优化配置。
+9. 国内网络访问 GitHub 不稳定时，可选择 `11` 切换网络源（自动 / 镜像）。
 
 ## 内核与 BBR 策略
 

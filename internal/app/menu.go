@@ -25,6 +25,7 @@ var menuItems = []menuEntry{
 	{num: "8", labelKey: "menu.item8", act: menuClearOptimizations},
 	{num: "9", labelKey: "menu.item9", act: menuExtremeMode},
 	{num: "10", labelKey: "menu.item10", act: menuCheckUpdate},
+	{num: "11", labelKey: "menu.item11", act: menuMirrorSettings},
 }
 
 // qdiscOptions 加速模式子菜单（原菜单 4-7 合并而来）。
@@ -54,6 +55,8 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleInputKey(msg)
 	case PageVersion:
 		return m.handleVersionKey(msg)
+	case PageMirror:
+		return m.handleMirrorKey(msg)
 	case PageResult:
 		return m.handleResultKey(msg)
 	}

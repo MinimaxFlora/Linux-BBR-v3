@@ -32,6 +32,7 @@ const (
 	PageConfirm // y/n 确认
 	PageInput   // 文本/数字输入
 	PageVersion // 版本列表选择
+	PageMirror  // 网络源设置（国内/国外）
 	PageLog     // 任务执行日志
 	PageResult  // 结果页
 )
@@ -113,6 +114,9 @@ type Model struct {
 	tags     []string
 	tagCursor int
 	tagCB    func(string) (Model, tea.Cmd)
+
+	// 网络源设置
+	mirrorCursor int
 
 	// 组件
 	spinner spinner.Model

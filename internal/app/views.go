@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/i18n"
+	"github.com/MinimaxFlora/Linux-BBR-v3/internal/netutil"
 )
 
 // View 渲染当前页面。
@@ -24,6 +25,8 @@ func (m Model) View() string {
 		return m.viewInput()
 	case PageVersion:
 		return m.viewVersion()
+	case PageMirror:
+		return m.viewMirror()
 	case PageLog:
 		return m.viewLog()
 	case PageResult:
@@ -125,7 +128,7 @@ func (m Model) viewMenu() string {
 	b.WriteString("\n\n")
 	b.WriteString(m.bottomBar(
 		[2]string{"↑/↓", i18n.T("help.select")},
-		[2]string{"1-9", i18n.T("help.run")},
+		[2]string{"1-11", i18n.T("help.run")},
 		[2]string{"Enter", i18n.T("help.confirm")},
 		[2]string{"L", i18n.T("help.lang")},
 		[2]string{"q", i18n.T("help.quit")},
@@ -242,6 +245,31 @@ func (m Model) viewVersion() string {
 		[2]string{"Num", i18n.T("help.jump")},
 		[2]string{"Enter", i18n.T("help.install")},
 		[2]string{"Esc", i18n.T("help.back")},
+	)
+}
+
+// viewMirror 网络源设置页（国内/国外，当前生效项标记）。
+func (m Model) viewMirror() string {
+	opts := netutil.MirrorValues()
+	cur := netutil.CurrentMirror()
+	rows := make([]itemRow, 0, len(opts))
+	for i, v := range opts {
+		label := mirrorLabel(v)
+		if v == cur {
+			label += "  " + green(i18n.T("mirror.current"))
+		}
+		rows = append(rows, itemRow{num: fmt.Sprintf("%02d.", i+1), label: label})
+	}
+	content := joinSections(0,
+		[]string{cardTitle("🌐 " + i18n.T("mirror.title"))},
+		strings.Split(renderItems(rows, m.mirrorCursor), "\n"),
+	)
+	return m.pageFrame(content,
+		[2]string{"↑/↓", i18n.T("help.select")},
+		[2]string{"1-5", i18n.T("help.run")},
+		[2]string{"Enter", i18n.T("help.confirm")},
+		[2]string{"Esc", i18n.T("help.back")},
+		[2]string{"q", i18n.T("help.quit")},
 	)
 }
 
