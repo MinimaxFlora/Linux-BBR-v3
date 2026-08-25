@@ -46,28 +46,27 @@ func (m Model) viewBoot() string {
 	return b.String()
 }
 
-// viewMenu 主菜单页。
+// viewMenu 主菜单：两个大框（顶部信息卡 + 菜单卡）。
 func (m Model) viewMenu() string {
 	env := currentEnv()
 
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
+	// 顶部大框：品牌 + 欢迎 + 语言/版本 + 状态 + 作者
+	var top strings.Builder
+	top.WriteString(titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version))
+	top.WriteString("\n\n")
+	top.WriteString(dim("✧  ") + bold(i18n.T("boot.title")))
+	top.WriteString("\n\n")
+	top.WriteString(langStyle.Render("🌐 "+i18n.T("menu.lang")+": "+langLabel()) + "   " +
+		dim(i18n.T("menu.ver")+": ") + bold(Version))
+	top.WriteString("\n\n")
+	top.WriteString(statusLine(env.CurrentAlgo, env.CurrentQdisc, kernelVersionHint()))
+	top.WriteString("\n\n")
+	top.WriteString(authorLine())
 
-	// 状态栏：TCP 算法 / 队列 / 内核
-	status := fmt.Sprintf(
-		"  %s  %s     %s  %s     %s  %s",
-		badgeStyle.Render(i18n.T("menu.algo")), green(env.CurrentAlgo),
-		badgeStyle.Render(i18n.T("menu.qdisc")), green(env.CurrentQdisc),
-		badgeStyle.Render(i18n.T("menu.kernel")), cyan(kernelVersionHint()),
-	)
-	b.WriteString(cardStyle.Render(status))
-	b.WriteString("\n\n")
-
-	// 菜单卡片
+	// 菜单大框
 	var items strings.Builder
-	items.WriteString(headerStyle.Render(i18n.T("menu.choose")) + "\n\n")
+	items.WriteString(headerStyle.Render(i18n.T("menu.choose")))
+	items.WriteString("\n\n")
 	for i, it := range menuItems {
 		label := it.num + ". " + it.icon + " " + i18n.T(it.labelKey)
 		if i == m.menuCursor {
@@ -76,47 +75,47 @@ func (m Model) viewMenu() string {
 			items.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
 	}
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
-	b.WriteString("\n\n")
 
-	// 页脚：作者 + 项目
-	b.WriteString(footer())
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(top.String(), "\n")))
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(i18n.T("menu.help")))
 	b.WriteString("\n")
 	return b.String()
 }
 
-// viewQdisc 队列算法子菜单（原菜单 4-7）。
+// viewQdisc 队列算法子菜单（标题与选项合成一个卡片）。
 func (m Model) viewQdisc() string {
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(headerStyle.Render("⚡ "+i18n.T("qdisc.title")) + "\n\n"))
-	var items strings.Builder
+	var body strings.Builder
+	body.WriteString(headerStyle.Render("⚡ "+i18n.T("qdisc.title")))
+	body.WriteString("\n\n")
 	for i, opt := range qdiscOptions {
 		label := opt.num + ". " + i18n.T(opt.labelKey)
 		if i == m.qdiscCursor {
-			items.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			body.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			items.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			body.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
 	}
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(miniHeader("⚡ "+i18n.T("qdisc.title")))
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(i18n.T("qdisc.help")))
 	b.WriteString("\n")
 	return b.String()
 }
 
-// viewProfile 内核类型选择页。
+// viewProfile 内核类型选择页（标题与选项合成一个卡片）。
 func (m Model) viewProfile() string {
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(headerStyle.Render(i18n.T("profile.title")) + "\n\n"))
+	var body strings.Builder
+	body.WriteString(headerStyle.Render(i18n.T("profile.title")))
+	body.WriteString("\n\n")
 	items := []struct {
 		num     string
 		labelKey string
@@ -125,19 +124,22 @@ func (m Model) viewProfile() string {
 		{"1", "profile.item1", ""},
 		{"2", "profile.item2", "profile.warn"},
 	}
-	var list strings.Builder
 	for i, it := range items {
 		label := it.num + ". " + i18n.T(it.labelKey)
 		if i == m.profileCursor {
-			list.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			body.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			list.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			body.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
 		if i == 1 && m.profileCursor == 1 && it.warnKey != "" {
-			list.WriteString("\n  " + yellow(i18n.T(it.warnKey)) + "\n")
+			body.WriteString("\n  " + yellow(i18n.T(it.warnKey)) + "\n")
 		}
 	}
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(list.String(), "\n")))
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(miniHeader(i18n.T("profile.title")))
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(i18n.T("profile.help")))
 	b.WriteString("\n")
@@ -146,16 +148,16 @@ func (m Model) viewProfile() string {
 
 // viewConfirm 确认页。
 func (m Model) viewConfirm() string {
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
 	var lines []string
 	lines = append(lines, yellow(i18n.T("confirm.title")))
 	for _, p := range strings.Split(m.confirmPrompt, "\n") {
 		lines = append(lines, cyan(p))
 	}
 	lines = append(lines, "", yellow(i18n.T("confirm.prompt")))
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(miniHeader(i18n.T("confirm.title")))
+	b.WriteString("\n\n")
 	b.WriteString(cardStyle.Render(strings.Join(lines, "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(i18n.T("confirm.help")))
@@ -165,10 +167,6 @@ func (m Model) viewConfirm() string {
 
 // viewInput 输入页。
 func (m Model) viewInput() string {
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
 	var lines []string
 	for _, p := range strings.Split(m.inputPrompt, "\n") {
 		lines = append(lines, cyan(p))
@@ -177,6 +175,10 @@ func (m Model) viewInput() string {
 	if m.inputErr != "" {
 		lines = append(lines, red("✘ "+m.inputErr))
 	}
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(miniHeader(i18n.T("menu.item4") + " / " + i18n.T("menu.item7")))
+	b.WriteString("\n\n")
 	b.WriteString(cardStyle.Render(strings.Join(lines, "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(i18n.T("input.help")))
@@ -184,13 +186,11 @@ func (m Model) viewInput() string {
 	return b.String()
 }
 
-// viewVersion 版本列表选择页。
+// viewVersion 版本列表选择页（标题与列表合成一个卡片）。
 func (m Model) viewVersion() string {
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(headerStyle.Render(i18n.T("version.title")) + "\n\n"))
+	var body strings.Builder
+	body.WriteString(headerStyle.Render(i18n.T("version.title")))
+	body.WriteString("\n\n")
 	start := 0
 	if len(m.tags) > 12 {
 		start = m.tagCursor - 6
@@ -201,19 +201,22 @@ func (m Model) viewVersion() string {
 			start = len(m.tags) - 12
 		}
 	}
-	var list strings.Builder
 	for i := start; i < len(m.tags) && i < start+12; i++ {
 		label := fmt.Sprintf("%2d. %s", i+1, m.tags[i])
 		if i == m.tagCursor {
-			list.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			body.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			list.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			body.WriteString("  " + itemStyle.Render("  "+label) + "\n")
 		}
 	}
 	if len(m.tags) > 12 {
-		list.WriteString(dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))) + "\n")
+		body.WriteString(dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))) + "\n")
 	}
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(list.String(), "\n")))
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(miniHeader(i18n.T("version.title")))
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(helpStyle.Render(i18n.T("version.help")))
 	b.WriteString("\n")
@@ -224,13 +227,11 @@ func (m Model) viewVersion() string {
 func (m Model) viewLog() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(titleStyle.Render(m.logTitle)))
+	b.WriteString(miniHeader(m.logTitle))
 	b.WriteString("\n\n")
 
 	// 计算可见日志窗口
-	visible := m.height - 14
+	visible := m.height - 10
 	if visible < 5 {
 		visible = 5
 	}
@@ -268,15 +269,7 @@ func (m Model) viewLog() string {
 func (m Model) viewResult() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
-	title := m.resultTitle
-	if m.taskErr != nil {
-		title = red(title)
-	} else {
-		title = green(title)
-	}
-	b.WriteString(cardStyle.Render(title))
+	b.WriteString(miniHeader(m.resultTitle))
 	b.WriteString("\n\n")
 
 	start := len(m.logs) - 15

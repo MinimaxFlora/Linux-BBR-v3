@@ -42,14 +42,12 @@ var (
 			Bold(true).
 			Foreground(lipgloss.Color(brandCyan))
 
-	// 菜单选中项：粉色高亮 + 圆角背景块
+	// 菜单选中项：粉色高亮块（无边框，避免卡片内嵌套边框错乱）
 	selectedItemStyle = lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color("#ffffff")).
 				Background(lipgloss.Color(brandPink)).
-				Padding(0, 1).
-				Border(lipgloss.RoundedBorder(), false, true, false, true).
-				BorderForeground(lipgloss.Color(brandPink))
+				Padding(0, 1)
 
 	// 普通菜单项
 	itemStyle = lipgloss.NewStyle().
@@ -91,23 +89,35 @@ var (
 			Bold(true)
 )
 
-// header 渲染品牌头部卡片。
+// header 渲染品牌头部卡片（主菜单顶部大框：品牌+欢迎+状态+作者）。
 func header() string {
-	return cardStyle.Render(
-		titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version) + "\n\n" +
-			dim("✧  ") + bold(i18n.T("boot.title")) + "\n\n" +
-			langStyle.Render(i18n.T("menu.lang")+": "+langLabel()) + "   " +
-			dim(i18n.T("menu.ver")+": ") + bold(Version),
-	)
+	var b strings.Builder
+	b.WriteString(titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version))
+	b.WriteString("\n\n")
+	b.WriteString(dim("✧  ") + bold(i18n.T("boot.title")))
+	b.WriteString("\n\n")
+	b.WriteString(langStyle.Render("🌐 "+i18n.T("menu.lang")+": "+langLabel()) + "   " +
+		dim(i18n.T("menu.ver")+": ") + bold(Version))
+	return cardStyle.Render(b.String())
 }
 
-// footer 渲染作者/项目信息。
-func footer() string {
-	return cardStyle.Render(
-		pink("♥ ") + i18n.T("menu.author") + "   " +
-			cyan("◆ ") + i18n.T("menu.repo") + "\n" +
-			dim("Linux " + kernelVersionHint()),
-	)
+// statusLine 渲染状态行（TCP/队列/内核，紧凑）。
+func statusLine(algo, qdisc, kernel string) string {
+	return fmt.Sprintf("%s %s    %s %s    %s %s",
+		badgeStyle.Render(i18n.T("menu.algo")), green(algo),
+		badgeStyle.Render(i18n.T("menu.qdisc")), green(qdisc),
+		badgeStyle.Render(i18n.T("menu.kernel")), cyan(kernel))
+}
+
+// authorLine 渲染作者/项目行。
+func authorLine() string {
+	return pink("♥ ") + i18n.T("menu.author") + "   " + cyan("◆ ") + i18n.T("menu.repo")
+}
+
+// miniHeader 子页面顶部的小标题行（避免每页重复大卡片）。
+func miniHeader(title string) string {
+	return titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version) +
+		"   " + dim("|") + "   " + headerStyle.Render(title)
 }
 
 // langLabel 返回当前语言显示名。
