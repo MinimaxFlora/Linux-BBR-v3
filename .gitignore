@@ -1,7 +1,7 @@
-# 编译产物
-bbrv3
-bbrv3.exe
-bbrv3-linux-*
+# 编译产物（仅根目录，避免误伤 patches/bbrv3-linux-*.patch）
+/bbrv3
+/bbrv3.exe
+/bbrv3-linux-*
 *.exe
 
 # 测试/临时
