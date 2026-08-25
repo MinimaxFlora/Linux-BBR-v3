@@ -209,7 +209,7 @@ BBRV3_DEV=1 go run .
 go test ./...
 ```
 
-GitHub Actions 的 `release-cli` job 会自动构建并发布二进制到 `bbrv3-cli` release，`b` 快捷命令从中拉取最新版本。
+GitHub Actions 的 `release-cli.yml` workflow（与内核构建独立）会在推送 master 或手动触发时构建并发布二进制到 `bbrv3-cli` release，`b` 快捷命令从中拉取最新版本。`build.yml` 只负责内核构建与发布。
 
 ## 目录结构
 
@@ -224,7 +224,8 @@ internal/
 scripts/                       # 内核构建脚本（CI 用，与原项目一致，包名已品牌化）
 patches/                       # BBRv3 补丁（固定）
 x86-64.config / arm64.config   # 内核配置基线
-.github/workflows/build.yml    # 内核自动构建 + bbrv3-cli 二进制发布
+.github/workflows/build.yml      # 内核自动构建 + 发布（schedule / 手动触发）
+.github/workflows/release-cli.yml # Go TUI 二进制发布到 bbrv3-cli release（push master / 手动触发）
 ```
 
 ## 免责声明
