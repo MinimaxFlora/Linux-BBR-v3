@@ -75,6 +75,23 @@ func InstalledKernelPackages(ctx context.Context) []string {
 	return pkgs
 }
 
+// KernelVersionInstalled 判断指定内核版本串（如 7.2.0-minimaxflora-bbrv3）
+// 对应的 linux-image 包是否已安装。
+func KernelVersionInstalled(ctx context.Context, version string) bool {
+	out := execx.TryOutput(ctx, "dpkg", "-l")
+	for _, line := range strings.Split(out, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 2 || fields[0] != "ii" {
+			continue
+		}
+		name := fields[1]
+		if strings.HasPrefix(name, "linux-image-") && strings.HasSuffix(name, version) {
+			return true
+		}
+	}
+	return false
+}
+
 // UpdateBootloader 更新引导加载程序（对应 update_bootloader）。
 func UpdateBootloader(ctx context.Context, log execx.Logger) error {
 	log.Logf(i18n.T("kernel.bootUpdating"))

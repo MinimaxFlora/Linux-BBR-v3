@@ -171,7 +171,9 @@ func installVersionInput(m Model, p bbr.Profile) func(string) (Model, tea.Cmd) {
 						return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
 					})
 			}
-			return m.showResult(i18n.T("install.upToDateR"), i18n.Tf("install.upToDate", bbr.ProfileLabel(p)))
+			// 目标版本已安装：显示"已是该版本"
+			expected := bbr.ExpectedInstalledVersion(bbr.KernelTagFor(currentEnv().ArchFilter, ver, p), p)
+			return m.showResult(i18n.T("install.upToDateR"), i18n.Tf("install.upToDateVer", expected))
 		}
 		return m, cmd
 	}
@@ -203,7 +205,7 @@ func listMatchingTags(ctx context.Context, log execx.Logger, profile bbr.Profile
 }
 
 // installVersionFlow 下载并安装指定版本（版本号 → tag → 资产 URL，走镜像）。
-// 已安装同版本时跳过下载安装（与 installLatestFlow 一致）。
+// 目标版本已安装时跳过下载安装，提示"已是该版本"。
 func installVersionFlow(ctx context.Context, log execx.Logger, profile bbr.Profile, ver string, installed *bool) error {
 	env := currentEnv()
 	if err := system.AssertSupportedKernelInstallSystem(ctx, env.OS); err != nil {
@@ -212,13 +214,9 @@ func installVersionFlow(ctx context.Context, log execx.Logger, profile bbr.Profi
 	tag := bbr.KernelTagFor(env.ArchFilter, ver, profile)
 	log.Logf(i18n.Tf("install.selected", tag))
 
-	installedVer := system.InstalledKernelVersion(ctx, profile)
-	if installedVer != "" {
-		log.Logf(i18n.Tf("install.installedV", installedVer))
-	}
 	expected := bbr.ExpectedInstalledVersion(tag, profile)
-	if installedVer != "" && installedVer == expected {
-		log.Logf(i18n.Tf("install.upToDate", bbr.ProfileLabel(profile)))
+	if system.KernelVersionInstalled(ctx, expected) {
+		log.Logf(i18n.Tf("install.upToDateVer", expected))
 		return nil
 	}
 
