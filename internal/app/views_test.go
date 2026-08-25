@@ -58,9 +58,9 @@ func TestMenuViewContainsAllItems(t *testing.T) {
 	if !strings.Contains(v, Version) {
 		t.Error("主菜单应显示版本号")
 	}
-	// 菜单应为 9 项（4-7 已合并）
-	if len(menuItems) != 9 {
-		t.Errorf("菜单应为 9 项, got %d", len(menuItems))
+	// 菜单应为 10 项（4-7 已合并，10 为检测更新）
+	if len(menuItems) != 10 {
+		t.Errorf("菜单应为 10 项, got %d", len(menuItems))
 	}
 }
 

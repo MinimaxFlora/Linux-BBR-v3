@@ -23,9 +23,10 @@ type Asset struct {
 
 // Release 是 GitHub release（仅含需要的字段）。
 type Release struct {
-	TagName     string  `json:"tag_name"`
-	PublishedAt string  `json:"published_at"`
-	Assets      []Asset `json:"assets"`
+	TagName         string  `json:"tag_name"`
+	TargetCommitish string  `json:"target_commitish"`
+	PublishedAt     string  `json:"published_at"`
+	Assets          []Asset `json:"assets"`
 }
 
 // GitHubAPIError 表示 GitHub API 返回的业务错误。

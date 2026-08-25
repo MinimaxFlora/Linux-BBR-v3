@@ -25,6 +25,7 @@ var menuItems = []menuEntry{
 	{num: "7", icon: "🧠", labelKey: "menu.item7", act: menuSmartTuning},
 	{num: "8", icon: "🧹", labelKey: "menu.item8", act: menuClearOptimizations},
 	{num: "9", icon: "🧨", labelKey: "menu.item9", act: menuExtremeMode},
+	{num: "10", icon: "🔄", labelKey: "menu.item10", act: menuCheckUpdate},
 }
 
 // qdiscOptions 加速模式子菜单（原菜单 4-7 合并而来）。

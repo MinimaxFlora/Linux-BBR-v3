@@ -532,6 +532,66 @@ func menuExtremeMode(m Model) (Model, tea.Cmd) {
 		})
 }
 
+// ---------- 菜单 10：检测 TUI 更新 ----------
+
+func menuCheckUpdate(m Model) (Model, tea.Cmd) {
+	var title, extra string
+	m, cmd := m.startTask(i18n.T("task.checkUpdate"), func(ctx context.Context, log execx.Logger) error {
+		t, e, err := checkTUIUpdate(ctx, log)
+		if err != nil {
+			return err
+		}
+		title, extra = t, e
+		return nil
+	})
+	m.afterTask = func(m Model) (Model, tea.Cmd) {
+		if m.taskErr != nil {
+			return m.showResult(i18n.T("update.titleFail"), m.taskErr.Error())
+		}
+		return m.showResult(title, extra)
+	}
+	return m, cmd
+}
+
+// checkTUIUpdate 检测 TUI 是否有新版本：对比本地注入 Commit 与远端
+// bbrv3-cli release 的 target_commitish（release 固定 tag，每次 push 覆盖上传）。
+func checkTUIUpdate(ctx context.Context, log execx.Logger) (title, extra string, err error) {
+	log.Logf(i18n.T("update.checking"))
+	releases, err := fetchReleases(ctx, log)
+	if err != nil {
+		return "", "", err
+	}
+	var remoteCommit string
+	for _, r := range releases {
+		if r.TagName == "bbrv3-cli" {
+			remoteCommit = r.TargetCommitish
+			break
+		}
+	}
+	if remoteCommit == "" {
+		return "", "", errors.New(i18n.T("update.noRelease"))
+	}
+	short := func(s string) string {
+		if len(s) > 8 {
+			return s[:8]
+		}
+		return s
+	}
+	remote := short(remoteCommit)
+	local := short(Commit)
+	log.Logf(i18n.Tf("update.local", local))
+	log.Logf(i18n.Tf("update.remote", remote))
+	if local == "dev" {
+		return i18n.T("update.devTitle"), i18n.Tf("update.devMsg", remote), nil
+	}
+	if strings.EqualFold(local, remote) {
+		log.Logf(i18n.T("update.latest"))
+		return i18n.T("update.latestTitle"), i18n.Tf("update.latestMsg", remote), nil
+	}
+	log.Logf(i18n.T("update.newFound"))
+	return i18n.T("update.newTitle"), i18n.Tf("update.newMsg", remote, local), nil
+}
+
 // ---------- 公共辅助 ----------
 
 // fetchReleases 获取 releases 并处理 API 错误（rate limit 提示）。

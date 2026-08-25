@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/bbr"
 	"github.com/MinimaxFlora/Linux-BBR-v3/internal/execx"
@@ -16,6 +17,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+// usageTickMsg 定时刷新 CPU/内存使用率。
+type usageTickMsg struct{}
 
 // Page 页面状态。
 type Page int
@@ -113,6 +117,11 @@ type Model struct {
 	// 组件
 	spinner spinner.Model
 
+	// 系统资源（CPU/内存，定时刷新）
+	cpuPrev system.CPUStat
+	cpuPct  float64
+	mem     system.MemStat
+
 	// 下载进度状态（跨事件累积）
 	dlLastPct int
 
@@ -154,7 +163,12 @@ func NewModel(ctx context.Context, env *system.Env) *Model {
 // Init 启动任务：快捷命令 + 安全缓解，然后进入主菜单。
 func (m Model) Init() tea.Cmd {
 	m.page = PageBoot
-	return tea.Batch(m.spinner.Tick, m.startBoot())
+	return tea.Batch(m.spinner.Tick, m.usageTick(), m.startBoot())
+}
+
+// usageTick 每 2 秒刷新一次 CPU/内存使用率（仅 Linux 有数据，其他平台保持零值）。
+func (m Model) usageTick() tea.Cmd {
+	return tea.Tick(2*time.Second, func(time.Time) tea.Msg { return usageTickMsg{} })
 }
 
 func (m Model) startBoot() tea.Cmd {
@@ -233,6 +247,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+
+	case usageTickMsg:
+		// 两次采样差计算 CPU 使用率；内存直接读 /proc/meminfo
+		if cur, err := system.ReadCPUStat(); err == nil {
+			m.cpuPct = cur.Percent(m.cpuPrev)
+			m.cpuPrev = cur
+		}
+		if mem, err := system.ReadMemStat(); err == nil {
+			m.mem = mem
+		}
+		return m, m.usageTick()
 
 	case taskEvent:
 		return m.handleTaskEvent(msg)

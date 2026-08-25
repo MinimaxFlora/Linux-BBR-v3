@@ -70,16 +70,31 @@ func (m Model) viewMenu() string {
 		qdiscVal = dim("—")
 	}
 
-	// 信息卡：品牌 logo+版本 / 欢迎语 / 作者·博客·项目 / 状态（竖排分区）
+	// 状态区：TCP/队列/内核 + CPU/内存（实时刷新）+ 版本
+	status := statusRows(algoVal, qdiscVal, cyan(kernelVersionHint()))
+	if m.mem.Total == 0 {
+		status = append(status,
+			shortLabel(i18n.T("menu.cpuShort")+": ")+dim("—"),
+			shortLabel(i18n.T("menu.memShort")+": ")+dim("—"),
+		)
+	} else {
+		memPct := 100 * float64(m.mem.Used) / float64(m.mem.Total)
+		status = append(status,
+			shortLabel(i18n.T("menu.cpuShort")+": ")+pink(fmt.Sprintf("%.0f%%", m.cpuPct))+"  "+miniBar(m.cpuPct, 10),
+			shortLabel(i18n.T("menu.memShort")+": ")+pink(fmt.Sprintf("%.0f%%", memPct))+"  "+miniBar(memPct, 10)+dim(" ("+memSize(m.mem.Used)+"/"+memSize(m.mem.Total)+")"),
+		)
+	}
+	status = append(status, shortLabel(i18n.T("menu.ver")+": ")+cyan(Version))
+
+	// 信息卡：欢迎语 / 作者·博客·项目 / 状态（竖排分区）
 	info := joinSections(0,
-		[]string{logo() + "  " + badgeStyle.Render(Version)},
 		[]string{dim("✧  ") + bold(i18n.T("boot.title"))},
 		[]string{
-			pink("♥  ") + dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
+			pink("◈  ") + dim(i18n.T("menu.authorLabel")+"：") + itemStyle.Render("MinimaxFlora"),
 			cyan("📝  ") + dim(i18n.T("menu.blog")+"：") + itemStyle.Render(i18n.T("menu.blogUrl")),
 			cyan("◆  ") + dim(i18n.T("menu.repoLabel")+"：") + itemStyle.Render(i18n.T("menu.repoUrl")),
 		},
-		statusRows(algoVal, qdiscVal, cyan(kernelVersionHint())),
+		status,
 	)
 
 	// 菜单卡：标题 + 选项列表

@@ -170,6 +170,28 @@ func statusRows(algoVal, qdiscVal, kernel string) []string {
 	}
 }
 
+// miniBar 迷你进度条（粉实心 + 灰空心，用于 CPU/内存）。
+func miniBar(pct float64, width int) string {
+	if width <= 0 {
+		width = 10
+	}
+	if pct < 0 {
+		pct = 0
+	}
+	if pct > 100 {
+		pct = 100
+	}
+	fill := int(float64(width) * pct / 100)
+	done := lipgloss.NewStyle().Foreground(lipgloss.Color(brandPink)).Render(strings.Repeat("█", fill))
+	todo := dim(strings.Repeat("░", width-fill))
+	return done + todo
+}
+
+// memSize 字节数转人类可读（GB，一位小数）。
+func memSize(b uint64) string {
+	return fmt.Sprintf("%.1fG", float64(b)/(1024*1024*1024))
+}
+
 // ---------- 选项列表 ----------
 
 // itemRow 渲染用选项行。
