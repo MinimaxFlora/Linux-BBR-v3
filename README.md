@@ -232,7 +232,7 @@ internal/
 └── app/                       # bubbletea TUI：主菜单 + 子页面（表单/进度日志/结果）
 scripts/                       # 内核构建脚本（CI 用，与原项目一致，包名已品牌化）
 patches/                       # BBRv3 补丁（固定）
-x86-64.config / arm64.config   # 内核配置基线
+configs/x86-64.config / arm64.config   # 内核配置基线
 .github/RELEASE_NOTES_cli.md   # bbrv3-cli release 说明（每次推送自动刷新）
 .github/workflows/build.yml      # 内核自动构建 + 发布（schedule / 手动触发）
 .github/workflows/release-cli.yml # Go TUI 二进制发布到 bbrv3-cli release（push master / 手动触发）

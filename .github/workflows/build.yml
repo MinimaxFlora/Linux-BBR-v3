@@ -326,20 +326,20 @@ jobs:
           fi
 
           if [ -f ./publish-markers/x86_64-standard ] && [ -f ./generated-configs/x86_64.config ]; then
-            cp ./generated-configs/x86_64.config ./x86-64.config
+            cp ./generated-configs/x86_64.config ./configs/x86-64.config
           fi
           if [ -f ./publish-markers/arm64-standard ] && [ -f ./generated-configs/arm64.config ]; then
-            cp ./generated-configs/arm64.config ./arm64.config
+            cp ./generated-configs/arm64.config ./configs/arm64.config
           fi
 
-          if git diff --quiet -- x86-64.config arm64.config; then
+          if git diff --quiet -- configs/x86-64.config configs/arm64.config; then
             echo "Generated configs match current baselines."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add x86-64.config arm64.config
+          git add configs/x86-64.config configs/arm64.config
           git commit -m "Refresh generated kernel config baselines [skip ci]"
           # 构建耗时较长，期间远端 master 可能已被推进：先 rebase 合入再推，
           # 避免非快进被拒（fetch first）

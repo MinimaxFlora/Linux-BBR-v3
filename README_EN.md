@@ -232,7 +232,7 @@ internal/
 └── app/                       # bubbletea TUI: main menu + subpages (forms / progress log / results)
 scripts/                       # Kernel build scripts (for CI, matching upstream, branding applied)
 patches/                       # BBRv3 patches (pinned)
-x86-64.config / arm64.config   # Kernel config baselines
+configs/x86-64.config / arm64.config   # Kernel config baselines
 .github/RELEASE_NOTES_cli.md   # bbrv3-cli release notes (auto-refreshed on every push)
 .github/workflows/build.yml      # Kernel auto-build + release (schedule / manual trigger)
 .github/workflows/release-cli.yml # Go TUI binary published to bbrv3-cli release (push master / manual trigger)

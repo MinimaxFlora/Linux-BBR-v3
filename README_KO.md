@@ -232,7 +232,7 @@ internal/
 └── app/                       # bubbletea TUI: 메인 메뉴 + 하위 페이지(폼 / 진행 로그 / 결과)
 scripts/                       # 커널 빌드 스크립트(CI용, 상류와 동일, 패키지 이름 브랜드화 완료)
 patches/                       # BBRv3 패치(고정)
-x86-64.config / arm64.config   # 커널 설정 베이스라인
+configs/x86-64.config / arm64.config   # 커널 설정 베이스라인
 .github/RELEASE_NOTES_cli.md   # bbrv3-cli 릴리스 설명(푸시할 때마다 자동 갱신)
 .github/workflows/build.yml      # 커널 자동 빌드 + 릴리스(schedule / 수동 트리거)
 .github/workflows/release-cli.yml # Go TUI 바이너리를 bbrv3-cli 릴리스에 게시(push master / 수동 트리거)

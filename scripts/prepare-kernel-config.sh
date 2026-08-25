@@ -111,10 +111,10 @@ validate_config() {
 
 case "$arch" in
   arm64)
-    cp "$GITHUB_WORKSPACE/arm64.config" .config
+    cp "$GITHUB_WORKSPACE/configs/arm64.config" .config
     ;;
   x86_64)
-    cp "$GITHUB_WORKSPACE/x86-64.config" .config
+    cp "$GITHUB_WORKSPACE/configs/x86-64.config" .config
     ;;
   *)
     echo "ERROR: unsupported arch: $arch"

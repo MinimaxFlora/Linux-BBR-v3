@@ -232,7 +232,7 @@ internal/
 └── app/                       # bubbletea TUI：メインメニュー + サブページ（フォーム / 進捗ログ / 結果）
 scripts/                       # カーネルビルドスクリプト（CI 用、上流と同一、パッケージ名はブランド化済み）
 patches/                       # BBRv3 パッチ（固定）
-x86-64.config / arm64.config   # カーネル設定ベースライン
+configs/x86-64.config / arm64.config   # カーネル設定ベースライン
 .github/RELEASE_NOTES_cli.md   # bbrv3-cli release の説明（push のたびに自動更新）
 .github/workflows/build.yml      # カーネル自動ビルド + 公開（schedule / 手動トリガー）
 .github/workflows/release-cli.yml # Go TUI バイナリを bbrv3-cli release に公開（push master / 手動トリガー）
