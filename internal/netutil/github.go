@@ -4,6 +4,8 @@ package netutil
 
 import (
 	"context"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -84,4 +86,54 @@ func downloadOnce(ctx context.Context, url, dest string, progress func(downloade
 		}
 	}
 	return nil
+}
+
+// ---- 版本列表（releases.atom，直连 github.com；不依赖 GitHub API） ----
+
+// FetchReleaseTags 获取仓库 release tag 列表（按发布时间新→旧，来自 releases.atom）。
+// 仅直连 github.com（镜像不代理网页/feed），失败时由调用方回退手动输入版本号。
+func FetchReleaseTags(ctx context.Context) ([]string, error) {
+	feedURL := fmt.Sprintf("https://github.com/%s/releases.atom", bbr.RepoFullName())
+	body, err := fetchAtomBody(ctx, feedURL)
+	if err != nil {
+		return nil, err
+	}
+	var feed struct {
+		Entries []struct {
+			Title string `xml:"title"`
+		} `xml:"entry"`
+	}
+	if err := xml.Unmarshal(body, &feed); err != nil {
+		return nil, fmt.Errorf("解析 releases.atom 失败: %w", err)
+	}
+	var tags []string
+	for _, e := range feed.Entries {
+		if t := strings.TrimSpace(e.Title); t != "" {
+			tags = append(tags, t)
+		}
+	}
+	if len(tags) == 0 {
+		return nil, errors.New("releases.atom 无条目")
+	}
+	return tags, nil
+}
+
+// fetchAtomBody GET atom feed 并返回 body（限 4MB）。
+func fetchAtomBody(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/atom+xml")
+	req.Header.Set("User-Agent", "bbrv3/"+bbr.RepoFullName())
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d (%s)", resp.StatusCode, url)
+	}
+	return io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 }

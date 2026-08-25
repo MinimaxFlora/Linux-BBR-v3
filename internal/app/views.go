@@ -23,6 +23,8 @@ func (m Model) View() string {
 		return m.viewConfirm()
 	case PageInput:
 		return m.viewInput()
+	case PageVersion:
+		return m.viewVersion()
 	case PageMirror:
 		return m.viewMirror()
 	case PageLog:
@@ -211,6 +213,38 @@ func (m Model) viewInput() string {
 	)
 	return m.pageFrame(content,
 		[2]string{"Enter", i18n.T("help.submit")},
+		[2]string{"Esc", i18n.T("help.back")},
+	)
+}
+
+// viewVersion 版本列表选择页（窗口滚动，编号直达）。
+func (m Model) viewVersion() string {
+	start := 0
+	if len(m.tags) > 12 {
+		start = m.tagCursor - 6
+		if start < 0 {
+			start = 0
+		}
+		if start+12 > len(m.tags) {
+			start = len(m.tags) - 12
+		}
+	}
+	rows := make([]itemRow, 0, len(m.tags))
+	for i := start; i < len(m.tags) && i < start+12; i++ {
+		rows = append(rows, itemRow{num: fmt.Sprintf("%d.", i+1), label: m.tags[i]})
+	}
+	lines := strings.Split(renderItems(rows, m.tagCursor-start), "\n")
+	if len(m.tags) > 12 {
+		lines = append(lines, "", dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))))
+	}
+	content := joinSections(0,
+		[]string{cardTitle(i18n.T("version.title"))},
+		lines,
+	)
+	return m.pageFrame(content,
+		[2]string{"↑/↓", i18n.T("help.select")},
+		[2]string{"Num", i18n.T("help.jump")},
+		[2]string{"Enter", i18n.T("help.install")},
 		[2]string{"Esc", i18n.T("help.back")},
 	)
 }

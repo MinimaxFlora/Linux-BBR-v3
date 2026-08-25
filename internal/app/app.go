@@ -31,6 +31,7 @@ const (
 	PageProfile // 内核类型选择
 	PageConfirm // y/n 确认
 	PageInput   // 文本/数字输入
+	PageVersion // 版本列表选择
 	PageMirror  // 网络源设置（国内/国外）
 	PageLog     // 任务执行日志
 	PageResult  // 结果页
@@ -108,6 +109,11 @@ type Model struct {
 
 	// 队列算法选择
 	qdiscCursor int
+
+	// 版本选择
+	tags      []string
+	tagCursor int
+	tagCB     func(string) (Model, tea.Cmd)
 
 	// 网络源设置
 	mirrorCursor int
@@ -368,6 +374,15 @@ func (m Model) askProfile(cb func(bbr.Profile) (Model, tea.Cmd)) (Model, tea.Cmd
 	m.page = PageProfile
 	m.profileCursor = 0
 	m.profileCB = cb
+	return m, nil
+}
+
+// askVersion 打开版本选择页。
+func (m Model) askVersion(tags []string, cb func(string) (Model, tea.Cmd)) (Model, tea.Cmd) {
+	m.page = PageVersion
+	m.tags = tags
+	m.tagCursor = 0
+	m.tagCB = cb
 	return m, nil
 }
 

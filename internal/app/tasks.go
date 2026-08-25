@@ -110,35 +110,81 @@ func installLatestFlow(ctx context.Context, log execx.Logger, profile bbr.Profil
 func menuInstallSpecific(m Model) (Model, tea.Cmd) {
 	return m.askProfile(func(p bbr.Profile) (Model, tea.Cmd) {
 		m.installProfile = p
-		return m.askInput(i18n.T("version.askInput"), func(ver string) (Model, tea.Cmd) {
-			ver = strings.TrimSpace(ver)
-			if ver == "" {
-				return m.goMenu()
-			}
-			var installed bool
-			m, cmd := m.startTask(i18n.Tf("task.installVer"), func(ctx context.Context, log execx.Logger) error {
-				return installVersionFlow(ctx, log, p, ver, &installed)
-			})
-			m.afterTask = func(m Model) (Model, tea.Cmd) {
-				if m.taskErr != nil {
-					return m.showResult(i18n.T("install.fail"), m.taskErr.Error())
-				}
-				if installed {
-					return m.askConfirm(i18n.T("install.rebootAsk"),
-						func(m Model) (Model, tea.Cmd) {
-							return m.startTask(i18n.T("task.reboot"), func(ctx context.Context, log execx.Logger) error {
-								return system.RebootSystem(ctx)
-							})
-						},
-						func(m Model) (Model, tea.Cmd) {
-							return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
-						})
-				}
-				return m.showResult(i18n.T("install.doneR"), i18n.T("install.done"))
-			}
-			return m, cmd
+		var tags []string
+		m, cmd := m.startTask(i18n.T("task.installVer"), func(ctx context.Context, log execx.Logger) error {
+			var err error
+			tags, err = listMatchingTags(ctx, log, p)
+			return err
 		})
+		m.afterTask = func(m Model) (Model, tea.Cmd) {
+			if m.taskErr != nil {
+				// 版本列表获取失败（如国内直连 github.com 受限）：回退手动输入版本号
+				return m.askInput(i18n.T("version.askInput"), installVersionInput(m, p))
+			}
+			return m.askVersion(tags, func(tag string) (Model, tea.Cmd) {
+				ver := bbr.VersionFromTag(tag)
+				return installVersionInput(m, p)(ver)
+			})
+		}
+		return m, cmd
 	})
+}
+
+// installVersionInput 版本号输入/选择确认后的安装流程（版本号 → tag → 资产 URL，走镜像）。
+func installVersionInput(m Model, p bbr.Profile) func(string) (Model, tea.Cmd) {
+	return func(ver string) (Model, tea.Cmd) {
+		ver = strings.TrimSpace(ver)
+		if ver == "" {
+			return m.goMenu()
+		}
+		var installed bool
+		m, cmd := m.startTask(i18n.Tf("task.installVer"), func(ctx context.Context, log execx.Logger) error {
+			return installVersionFlow(ctx, log, p, ver, &installed)
+		})
+		m.afterTask = func(m Model) (Model, tea.Cmd) {
+			if m.taskErr != nil {
+				return m.showResult(i18n.T("install.fail"), m.taskErr.Error())
+			}
+			if installed {
+				return m.askConfirm(i18n.T("install.rebootAsk"),
+					func(m Model) (Model, tea.Cmd) {
+						return m.startTask(i18n.T("task.reboot"), func(ctx context.Context, log execx.Logger) error {
+							return system.RebootSystem(ctx)
+						})
+					},
+					func(m Model) (Model, tea.Cmd) {
+						return m.showResult(i18n.T("common.cancel"), i18n.T("install.rebootLater"))
+					})
+			}
+			return m.showResult(i18n.T("install.doneR"), i18n.T("install.done"))
+		}
+		return m, cmd
+	}
+}
+
+// listMatchingTags 从 releases.atom 获取并筛选当前架构匹配的 release tag 列表（升序）。
+// 仅直连 github.com（镜像不代理 feed），失败由调用方回退手动输入版本号。
+func listMatchingTags(ctx context.Context, log execx.Logger, profile bbr.Profile) ([]string, error) {
+	env := currentEnv()
+	if err := system.AssertSupportedKernelInstallSystem(ctx, env.OS); err != nil {
+		return nil, err
+	}
+	log.Logf(i18n.Tf("install.versionList", bbr.ProfileLabel(profile)))
+	tags, err := netutil.FetchReleaseTags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var matched []string
+	for _, t := range tags {
+		if bbr.TagMatchesProfile(t, env.ArchFilter, profile) {
+			matched = append(matched, t)
+		}
+	}
+	if len(matched) == 0 {
+		return nil, errors.New(i18n.Tf("install.noVersion", bbr.ProfileLabel(profile)))
+	}
+	bbr.SortTagsByVersion(matched)
+	return matched, nil
 }
 
 // installVersionFlow 下载并安装指定版本（版本号 → tag → 资产 URL，走镜像）。

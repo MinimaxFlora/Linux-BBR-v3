@@ -61,8 +61,10 @@ var zhStrings = map[string]string{
 	"qdisc.help":  "↑/↓ 选择  ·  数字键 1-4 直接执行  ·  Esc 返回主菜单  ·  q 退出",
 
 	// ---- 版本选择 ----
-	"version.askInput": "请输入要安装的内核版本号（如 7.2.0）：",
-	"version.help":     "Enter 提交  ·  Esc 返回  ·  q 退出",
+	"version.title":    "以下为适用于当前架构的版本",
+	"version.total":    "（共 %d 个版本）",
+	"version.askInput": "版本列表获取失败，请输入要安装的内核版本号（如 7.2.0）：",
+	"version.help":     "↑/↓ 选择  ·  数字键直接选择  ·  Enter 安装  ·  Esc 返回  ·  q 退出",
 
 	// ---- 确认页 ----
 	"confirm.title":  "╭( ･ㅂ･)و ✧ 确认操作",
@@ -402,8 +404,10 @@ var enStrings = map[string]string{
 	"qdisc.help":  "↑/↓ select  ·  1-4 direct run  ·  Esc back  ·  q quit",
 
 	// ---- Version select ----
-	"version.askInput": "Enter the kernel version to install (e.g. 7.2.0): ",
-	"version.help":     "Enter submit  ·  Esc back  ·  q quit",
+	"version.title":    "Available versions for your architecture",
+	"version.total":    "(%d versions total)",
+	"version.askInput": "Failed to fetch the version list. Enter the kernel version to install (e.g. 7.2.0): ",
+	"version.help":     "↑/↓ select  ·  number to jump  ·  Enter install  ·  Esc back  ·  q quit",
 
 	// ---- Confirm ----
 	"confirm.title":  "╭( ･ㅂ･)و ✧ Confirmation",
