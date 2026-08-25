@@ -268,7 +268,25 @@ jobs:
           files: |
             ./kernel/linux-*.deb
             ./build-configs/${{ matrix.arch }}-${{ env.KERNEL_VERSION }}.config
-          body: "带有 ${{ matrix.profile_name }} 的最新内核，适用于 ${{ matrix.arch }} 架构。Compiled & Optimized by MinimaxFlora."
+          body: |
+            ## ✨ ${{ matrix.profile_name }} 内核 ${{ env.KERNEL_VERSION }}（${{ matrix.arch }}）
+
+            ### 🔧 构建信息
+            - 内核版本：${{ env.KERNEL_VERSION }}（主线最新 stable）
+            - 架构：${{ matrix.arch }}
+            - 配置：${{ matrix.profile_name }}（移植 byJoey/Actions-bbr-v3 的 BBRv3 补丁，`tcp_bbr` v3）
+
+            ### 📦 安装方法
+            ```bash
+            # 下载本 release 的 linux-*.deb 后执行
+            sudo dpkg -i linux-*.deb
+            sudo reboot
+            ```
+
+            ### 🚀 使用
+            安装并重启后，用 `bbr` 快捷命令（Go TUI 管理程序）检查状态、启用 BBR v3 与网络调优。
+
+            Compiled & Optimized by MinimaxFlora.
 
   update-config-baseline:
     needs: [preflight, build]

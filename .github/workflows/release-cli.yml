@@ -1,7 +1,8 @@
 name: 发布 Go TUI 二进制
 
 # 独立于内核构建：推送 master / 手动触发时构建并发布 bbrv3 CLI 二进制，
-# 供 `b` 快捷命令联网拉取（固定 tag bbrv3-cli，资产每次覆盖上传）。
+# 供 `bbr` 快捷命令使用（固定 tag bbrv3-cli，资产每次覆盖上传，
+# release 说明同步刷新为 .github/RELEASE_NOTES_cli.md）。
 on:
   push:
     branches:
@@ -41,9 +42,11 @@ jobs:
           set -euo pipefail
           if gh release view bbrv3-cli >/dev/null 2>&1; then
             gh release upload bbrv3-cli bbrv3-linux-amd64 bbrv3-linux-arm64 --clobber
+            # 每次推送同步刷新 release 说明（固定 tag 无法比版本号，以说明记录更新历史）
+            gh release edit bbrv3-cli --notes-file .github/RELEASE_NOTES_cli.md
           else
             gh release create bbrv3-cli \
               --title "BBRv3 Go TUI" \
-              --notes "Linux-BBR-v3 管理程序（Go + bubbletea TUI）。\`b\` 快捷命令从此 release 拉取最新二进制。" \
+              --notes-file .github/RELEASE_NOTES_cli.md \
               bbrv3-linux-amd64 bbrv3-linux-arm64
           fi
