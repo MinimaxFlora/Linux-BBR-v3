@@ -54,8 +54,8 @@ func IsOoklaSpeedtest(binPath string) bool {
 // RemoveSpeedtestCLI 移除 Python 版 speedtest-cli（对应 remove_speedtest_cli）。
 func RemoveSpeedtestCLI(ctx context.Context, log execx.Logger) {
 	// 检查 PATH 中的 speedtest 是否为非 Ookla 版本
-	pathOut := execx.TryOutput(ctx, "command", "-v", "speedtest")
-	if pathOut != "" && !IsOoklaSpeedtest(strings.TrimSpace(pathOut)) {
+	pathOut := execx.Which("speedtest")
+	if pathOut != "" && !IsOoklaSpeedtest(pathOut) {
 		versionOut := execx.TryOutput(ctx, strings.TrimSpace(pathOut), "--version")
 		if strings.Contains(strings.ToLower(versionOut), "speedtest-cli") || strings.Contains(strings.ToLower(versionOut), "python") {
 			log.Logf("检测到非 Ookla 官方 speedtest，正在移除 speedtest-cli...")
@@ -122,8 +122,8 @@ func EnsureOoklaSpeedtest(ctx context.Context, log execx.Logger, arch string) (s
 	RemoveSpeedtestCLI(ctx, log)
 
 	// PATH 中已有 Ookla 版本则直接使用
-	if p := execx.TryOutput(ctx, "command", "-v", "speedtest"); p != "" && IsOoklaSpeedtest(strings.TrimSpace(p)) {
-		return strings.TrimSpace(p), nil
+	if p := execx.Which("speedtest"); p != "" && IsOoklaSpeedtest(p) {
+		return p, nil
 	}
 	if err := InstallOoklaSpeedtest(ctx, log, arch); err != nil {
 		return "", err

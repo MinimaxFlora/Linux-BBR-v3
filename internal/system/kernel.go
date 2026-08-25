@@ -77,7 +77,7 @@ func InstalledKernelPackages(ctx context.Context) []string {
 // UpdateBootloader 更新引导加载程序（对应 update_bootloader）。
 func UpdateBootloader(ctx context.Context, log execx.Logger) error {
 	log.Logf("正在更新引导加载程序...")
-	if execx.RunOK(ctx, "command", "-v", "update-grub") {
+	if execx.HasCommand("update-grub") {
 		log.Logf("检测到 GRUB，正在执行 update-grub...")
 		if _, err := execx.Run(ctx, log, "update-grub"); err != nil {
 			log.Logf("GRUB 更新失败！")

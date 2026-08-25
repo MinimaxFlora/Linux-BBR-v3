@@ -103,25 +103,43 @@ func RequireAPT(ctx context.Context) error {
 	return fmt.Errorf("此程序仅支持 Debian/Ubuntu 系统，请在支持 apt-get 和 .deb 内核包的系统上运行！\nAlpine Linux 等非 Debian 系统暂不支持安装本项目内核包。")
 }
 
+// depPackage 命令名 → Debian/Ubuntu 软件包名映射。
+// 注意：awk 是虚拟包（由 gawk/mawk 提供），sysctl 属于 procps，不能直接用命令名当包名。
+var depPackage = map[string]string{
+	"curl":   "curl",
+	"wget":   "wget",
+	"dpkg":   "dpkg",
+	"awk":    "gawk",
+	"sed":    "sed",
+	"sysctl": "procps",
+	"jq":     "jq",
+}
+
 // EnsureDeps 检查必需命令，缺失则通过 apt 安装。
+// 与原脚本一致：安装失败仅警告，不阻断程序运行。
 func EnsureDeps(ctx context.Context, log execx.Logger) error {
 	required := []string{"curl", "wget", "dpkg", "awk", "sed", "sysctl", "jq"}
-	missing := []string{}
+	var pkgs []string
+	seen := map[string]bool{}
 	for _, cmd := range required {
-		if !execx.RunOK(ctx, "command", "-v", cmd) {
-			missing = append(missing, cmd)
+		if execx.HasCommand(cmd) {
+			continue
+		}
+		if pkg := depPackage[cmd]; pkg != "" && !seen[pkg] {
+			seen[pkg] = true
+			pkgs = append(pkgs, pkg)
 		}
 	}
-	if len(missing) == 0 {
+	if len(pkgs) == 0 {
 		return nil
 	}
-	log.Logf("缺少依赖：%s，正在安装...", strings.Join(missing, " "))
-	if _, err := execx.Run(ctx, log, "apt-get", "update"); err != nil {
-		return err
+	log.Logf("缺少依赖：%s，正在安装...", strings.Join(pkgs, " "))
+	_ = execx.RunOK(ctx, "apt-get", "update")
+	args := append([]string{"install", "-y"}, pkgs...)
+	if _, err := execx.Run(ctx, log, "apt-get", args...); err != nil {
+		log.Logf("⚠ 依赖安装未完全成功（不影响本次运行，相关功能可能受限）：%v", err)
 	}
-	args := append([]string{"install", "-y"}, missing...)
-	_, err := execx.Run(ctx, log, "apt-get", args...)
-	return err
+	return nil
 }
 
 // CheckArch 校验架构，返回 release 架构名。

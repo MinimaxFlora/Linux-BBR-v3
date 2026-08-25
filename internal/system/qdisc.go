@@ -60,7 +60,7 @@ func moduleLoaded(ctx context.Context, moduleName string) bool {
 
 // EnsureIPRoute2 确保 ip/tc 可用，缺失则安装 iproute2。
 func EnsureIPRoute2(ctx context.Context, log execx.Logger) bool {
-	if execx.RunOK(ctx, "command", "-v", "ip") && execx.RunOK(ctx, "command", "-v", "tc") {
+	if execx.HasCommand("ip") && execx.HasCommand("tc") {
 		return true
 	}
 	log.Logf("正在安装 iproute2，用于立即切换当前网卡队列算法...")

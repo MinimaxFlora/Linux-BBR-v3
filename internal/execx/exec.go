@@ -97,6 +97,22 @@ func RunOK(ctx context.Context, name string, args ...string) bool {
 	return err == nil
 }
 
+// HasCommand 判断命令是否存在于 PATH（等价 shell 的 command -v，但直接用 LookPath，
+// 避免 "command" 是 shell 内建、没有对应可执行文件的问题）。
+func HasCommand(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
+}
+
+// Which 返回命令的绝对路径，不存在返回空字符串。
+func Which(name string) string {
+	p, err := exec.LookPath(name)
+	if err != nil {
+		return ""
+	}
+	return p
+}
+
 // ExitError 是 exec.ExitError 的别名判断辅助。
 func IsExitError(err error) bool {
 	var ee *exec.ExitError
