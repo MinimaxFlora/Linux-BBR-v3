@@ -23,10 +23,17 @@ export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' 
   && sh -c "$(curl -fsSL $url/install.sh)"
 ```
 
-> 또는 jsDelivr CDN 소스(중국 국내용)
+> 또는 가속 소스(중국 국내용)
 
 ```sh
-export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+export url='https://gh-proxy.com/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
+```
+
+> 또는 저자 소스
+
+```sh
+export url='https://gh-proxy.kejizero.xyz/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && sh -c "$(curl -fsSL $url/install.sh)"
 ```
 
@@ -40,10 +47,18 @@ export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' 
   && sh /tmp/install.sh
 ```
 
-> 또는 jsDelivr CDN 소스
+> 또는 가속 소스
 
 ```sh
-export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+export url='https://gh-proxy.com/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> 또는 저자 소스
+
+```sh
+export url='https://gh-proxy.kejizero.xyz/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
   && sh /tmp/install.sh
 ```

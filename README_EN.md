@@ -23,10 +23,17 @@ export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' 
   && sh -c "$(curl -fsSL $url/install.sh)"
 ```
 
-> Or jsDelivr CDN source (for mainland China networks)
+> Or accelerated source (for mainland China networks)
 
 ```sh
-export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+export url='https://gh-proxy.com/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
+  && sh -c "$(curl -fsSL $url/install.sh)"
+```
+
+> Or author source
+
+```sh
+export url='https://gh-proxy.kejizero.xyz/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && sh -c "$(curl -fsSL $url/install.sh)"
 ```
 
@@ -40,10 +47,18 @@ export url='https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' 
   && sh /tmp/install.sh
 ```
 
-> Or jsDelivr CDN source
+> Or accelerated source
 
 ```sh
-export url='https://testingcf.jsdelivr.net/gh/MinimaxFlora/Linux-BBR-v3@master' \
+export url='https://gh-proxy.com/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
+  && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
+  && sh /tmp/install.sh
+```
+
+> Or author source
+
+```sh
+export url='https://gh-proxy.kejizero.xyz/https://github.com/MinimaxFlora/Linux-BBR-v3/raw/refs/heads/master' \
   && wget -q --no-check-certificate -O /tmp/install.sh $url/install.sh \
   && sh /tmp/install.sh
 ```
