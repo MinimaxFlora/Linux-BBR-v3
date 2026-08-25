@@ -1,4 +1,6 @@
 // Package app 实现 bubbletea TUI：主菜单 + 各功能子页面。
+// 设计参考 k9s / lazygit / btop 的经典 TUI 布局：
+// 顶部状态栏 + 内容区 + 底部快捷键栏，克制配色，信息网格化。
 package app
 
 import (
@@ -10,7 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// 品牌色（用户偏好粉色系，延续 mihomo UI 的 #ec4899）。
+// 品牌色（延续 mihomo UI 的粉色偏好 + 深色高级感）。
 const (
 	brandPink   = "#ec4899"
 	brandCyan   = "#22d3ee"
@@ -18,11 +20,14 @@ const (
 	brandGreen  = "#34d399"
 	brandYellow = "#fbbf24"
 	brandRed    = "#f87171"
-	brandDim    = "#9ca3af"
-	brandBg     = "#1f1147"
+	brandDim    = "#94a3b8"
+	// 深色背景基调
+	bgTop    = "#1e1b3a" // 顶栏深紫
+	bgBottom = "#141228" // 底栏更深
+	bgAccent = "#2d2a55" // 选中背景
 )
 
-// 样式主题：深色渐变卡片 + 粉色品牌色。
+// 样式主题。
 var (
 	// 文本色
 	cyan   = lipgloss.NewStyle().Foreground(lipgloss.Color(brandCyan)).Render
@@ -33,16 +38,35 @@ var (
 	dim    = lipgloss.NewStyle().Foreground(lipgloss.Color(brandDim)).Render
 	bold   = lipgloss.NewStyle().Bold(true).Render
 
-	// 品牌标题（粉色渐变强调）
+	// 品牌标题（粉色）
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color(brandPink))
 
+	// 页面标题（青色）
 	headerStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color(brandCyan))
 
-	// 菜单选中项：粉色高亮块（无边框，避免卡片内嵌套边框错乱）
+	// 顶部状态栏（整条深紫背景）
+	topBarStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#e2e8f0")).
+			Background(lipgloss.Color(bgTop)).
+			Padding(0, 1)
+
+	// 底部快捷键栏（整条深色背景）
+	bottomBarStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#cbd5e1")).
+			Background(lipgloss.Color(bgBottom)).
+			Padding(0, 1)
+
+	// 底栏按键高亮（粉色）
+	barKey = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color(brandPink))
+
+	// 菜单选中项：粉色背景 + 白字（紧凑，无边框）
 	selectedItemStyle = lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color("#ffffff")).
@@ -51,71 +75,104 @@ var (
 
 	// 普通菜单项
 	itemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(brandYellow)).
+			Foreground(lipgloss.Color("#e2e8f0")).
 			Padding(0, 1)
 
-	// 卡片容器：渐变紫粉色边框
-	cardStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color(brandPurple)).
-			Padding(0, 2)
-
-	// 状态徽章
-	badgeStyle = lipgloss.NewStyle().
+	// 菜单编号（青色）
+	numStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#ffffff")).
-			Background(lipgloss.Color(brandCyan)).
-			Padding(0, 1)
+			Foreground(lipgloss.Color(brandCyan)).
+			Render
 
-	// 品牌徽章（粉色）
-	brandBadge = lipgloss.NewStyle().
+	// 版本徽章
+	badgeStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#ffffff")).
 			Background(lipgloss.Color(brandPink)).
 			Padding(0, 1)
 
-	// 页脚帮助
+	// 内容卡片（紫色圆角边框，克制）
+	cardStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#4c3a8f")).
+			Padding(0, 2)
+
+	// 卡片标题（内嵌小节标题）
+	cardTitle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color(brandCyan)).
+			Render
+
+	// 信息网格 label（灰色，统一宽度 16 列）
+	infoLabel = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(brandDim)).
+			Width(16).
+			Render
+
+	// 短标签（信息卡状态行）
+	shortLabel = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(brandDim)).
+			Render
+
+	// 帮助行（备用）
 	helpStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(brandDim))
-
-	// 分隔线
-	separator = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(brandPurple)).
-			Render("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-	// 语言徽章（当前语言高亮）
-	langStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(brandCyan)).
-			Bold(true)
 )
 
-// header 渲染品牌头部卡片（主菜单顶部大框：品牌+欢迎+状态+作者）。
-func header() string {
-	var b strings.Builder
-	b.WriteString(titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version))
-	b.WriteString("\n\n")
-	b.WriteString(dim("✧  ") + bold(i18n.T("boot.title")))
-	b.WriteString("\n\n")
-	b.WriteString(langStyle.Render("🌐 "+i18n.T("menu.lang")+": "+langLabel()) + "   " +
-		dim(i18n.T("menu.ver")+": ") + bold(Version))
-	return cardStyle.Render(b.String())
+// topBar 顶部状态栏：✦ BBRv3 v1.0.0  ❯ 页面标题  │  TCP/队列/内核  │  🌐 语言
+func (m Model) topBar(pageTitle string) string {
+	env := currentEnv()
+
+	left := titleStyle.Render("✦ BBRv3") + " " + badgeStyle.Render(Version)
+	if pageTitle != "" {
+		left += dim("  ❯  ") + headerStyle.Render(pageTitle)
+	}
+
+	algo := env.CurrentAlgo
+	if algo == "" {
+		algo = "—"
+	}
+	algoVal := green(algo)
+	if algo != "bbr" && algo != "—" {
+		algoVal = yellow(algo)
+	}
+	qdisc := env.CurrentQdisc
+	if qdisc == "" {
+		qdisc = "—"
+	}
+	state := fmt.Sprintf("TCP: %s  队列: %s  内核: %s",
+		algoVal, green(qdisc), cyan(kernelVersionHint()))
+
+	lang := langLabel()
+
+	return topBarStyle.Render(strings.Join(
+		[]string{left, state, "🌐 " + lang},
+		dim("  │  "),
+	))
 }
 
-// statusBlock 竖排状态块：label: value 每行一个（TCP/队列/内核）。
-func statusBlock(algo, qdisc, kernel string) string {
-	return fmt.Sprintf("%s\n%s\n%s",
-		dim(i18n.T("menu.algo")+": ") + algo,
-		dim(i18n.T("menu.qdisc")+": ") + qdisc,
-		dim(i18n.T("menu.kernel")+": ") + kernel)
+// bottomBar 底部快捷键栏（k9s 风格：整条深色背景 + 粉色按键）。
+func bottomBar(keys ...[2]string) string {
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, barKey.Render(k[0])+" "+dim(k[1]))
+	}
+	return bottomBarStyle.Render(strings.Join(parts, "   "))
 }
 
-// divider 信息卡内的细分隔线。
-var divider = strings.Repeat("─", 40)
+// statusCompact 紧凑状态行（短标签一行：TCP 算法 / 队列算法 / 内核）。
+func statusCompact(algoVal, qdiscVal, kernel string) string {
+	return fmt.Sprintf("%s %s    %s %s    %s %s",
+		shortLabel(i18n.T("menu.algoShort")+": "), algoVal,
+		shortLabel(i18n.T("menu.qdiscShort")+": "), qdiscVal,
+		shortLabel(i18n.T("menu.kernelShort")+": "), kernel,
+	)
+}
 
-// miniHeader 子页面顶部的小标题行（避免每页重复大卡片）。
+// miniHeader 子页面顶部的小标题行（顶栏内已含标题时可不使用）。
 func miniHeader(title string) string {
-	return titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version) +
-		"   " + dim("|") + "   " + headerStyle.Render(title)
+	return titleStyle.Render("✦ BBRv3") + " " + badgeStyle.Render(Version) +
+		dim("  ❯  ") + headerStyle.Render(title)
 }
 
 // langLabel 返回当前语言显示名。

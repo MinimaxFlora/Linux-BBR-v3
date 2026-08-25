@@ -34,131 +34,136 @@ func (m Model) View() string {
 
 // viewBoot 启动任务页。
 func (m Model) viewBoot() string {
-	var b strings.Builder
-	b.WriteString("\n")
-	b.WriteString(header())
-	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(
+	content := cardStyle.Render(
 		cyan(i18n.T("boot.init")) + "\n\n" +
 			strings.Join(logsColored(m.logs), "\n") + "\n\n" +
 			m.spinner.View()+" "+dim(i18n.T("boot.waiting")),
-	))
-	return b.String()
+	)
+	return "\n" + content + "\n\n"
 }
 
-// viewMenu 主菜单：两个大框（顶部信息卡竖排 + 菜单卡）。
+// viewMenu 主菜单：顶栏 + 信息网格卡 + 菜单卡 + 底栏。
 func (m Model) viewMenu() string {
 	env := currentEnv()
 
-	// 顶部信息卡：竖排布局（品牌/欢迎 → 语言版本 → 作者项目 → 状态）
+	// 状态值（空值占位；非 bbr 黄色警示）
 	algoVal := green(env.CurrentAlgo)
-	if env.CurrentAlgo != "bbr" {
-		algoVal = yellow(env.CurrentAlgo)
-	}
 	if env.CurrentAlgo == "" {
 		algoVal = dim("—")
+	} else if env.CurrentAlgo != "bbr" {
+		algoVal = yellow(env.CurrentAlgo)
 	}
 	qdiscVal := green(env.CurrentQdisc)
 	if env.CurrentQdisc == "" {
 		qdiscVal = dim("—")
 	}
-	var top strings.Builder
-	top.WriteString(titleStyle.Render("✦ BBRv3 Manager ✦") + "  " + brandBadge.Render(Version))
-	top.WriteString("\n\n")
-	top.WriteString(dim("✧  ") + bold(i18n.T("boot.title")))
-	top.WriteString("\n\n")
-	top.WriteString(langStyle.Render("🌐 "+i18n.T("menu.lang")+": "+langLabel()) + "    " +
-		dim(i18n.T("menu.ver")+": ") + bold(Version))
-	top.WriteString("\n\n")
-	top.WriteString(dim(divider))
-	top.WriteString("\n\n")
-	top.WriteString(pink("♥  ") + i18n.T("menu.author"))
-	top.WriteString("\n")
-	top.WriteString(cyan("◆  ") + i18n.T("menu.repo"))
-	top.WriteString("\n\n")
-	top.WriteString(dim(divider))
-	top.WriteString("\n\n")
-	top.WriteString(statusBlock(algoVal, qdiscVal, cyan(kernelVersionHint())))
 
-	// 菜单大框
+	// 信息卡：欢迎语 + 作者/项目 + 分隔线 + 紧凑状态行
+	info := fmt.Sprintf("%s\n\n%s\n%s\n\n%s",
+		dim("✧  ")+bold(i18n.T("boot.title")),
+		pink("♥  ")+i18n.T("menu.author"),
+		cyan("◆  ")+i18n.T("menu.repo"),
+		statusCompact(algoVal, qdiscVal, cyan(kernelVersionHint())),
+	)
+
+	// 菜单卡
 	var items strings.Builder
-	items.WriteString(headerStyle.Render(i18n.T("menu.choose")))
+	items.WriteString(cardTitle(i18n.T("menu.choose")))
 	items.WriteString("\n\n")
 	for i, it := range menuItems {
-		label := it.num + ". " + it.icon + " " + i18n.T(it.labelKey)
+		label := it.icon + " " + i18n.T(it.labelKey)
 		if i == m.menuCursor {
-			items.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			items.WriteString("  " + selectedItemStyle.Render("▸ "+it.num+". "+label) + "\n")
 		} else {
-			items.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			items.WriteString("  " + itemStyle.Render("  "+numStyle(it.num)+". "+label) + "\n")
 		}
 	}
 
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(top.String(), "\n")))
+	b.WriteString(m.topBar(""))
+	b.WriteString("\n\n")
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(info, "\n")))
 	b.WriteString("\n\n")
 	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("menu.help")))
+	b.WriteString(bottomBar(
+		[2]string{"↑/↓", i18n.T("help.select")},
+		[2]string{"1-9", i18n.T("help.run")},
+		[2]string{"Enter", i18n.T("help.confirm")},
+		[2]string{"L", i18n.T("help.lang")},
+		[2]string{"q", i18n.T("help.quit")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
 
-// viewQdisc 队列算法子菜单（标题与选项合成一个卡片）。
+// viewQdisc 队列算法子菜单。
 func (m Model) viewQdisc() string {
-	var body strings.Builder
-	body.WriteString(headerStyle.Render("⚡ "+i18n.T("qdisc.title")))
-	body.WriteString("\n\n")
+	var items strings.Builder
+	items.WriteString(cardTitle("⚡ " + i18n.T("qdisc.title")))
+	items.WriteString("\n\n")
 	for i, opt := range qdiscOptions {
-		label := opt.num + ". " + i18n.T(opt.labelKey)
+		label := i18n.T(opt.labelKey)
 		if i == m.qdiscCursor {
-			body.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			items.WriteString("  " + selectedItemStyle.Render("▸ "+opt.num+". "+label) + "\n")
 		} else {
-			body.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			items.WriteString("  " + itemStyle.Render("  "+numStyle(opt.num)+". "+label) + "\n")
 		}
 	}
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader("⚡ "+i18n.T("qdisc.title")))
+	b.WriteString(m.topBar("⚡ " + i18n.T("qdisc.title")))
 	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("qdisc.help")))
+	b.WriteString(bottomBar(
+		[2]string{"↑/↓", i18n.T("help.select")},
+		[2]string{"1-4", i18n.T("help.run")},
+		[2]string{"Enter", i18n.T("help.confirm")},
+		[2]string{"Esc", i18n.T("help.back")},
+		[2]string{"q", i18n.T("help.quit")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
 
-// viewProfile 内核类型选择页（标题与选项合成一个卡片）。
+// viewProfile 内核类型选择页。
 func (m Model) viewProfile() string {
-	var body strings.Builder
-	body.WriteString(headerStyle.Render(i18n.T("profile.title")))
-	body.WriteString("\n\n")
-	items := []struct {
-		num     string
+	var items strings.Builder
+	items.WriteString(cardTitle(i18n.T("profile.title")))
+	items.WriteString("\n\n")
+	rows := []struct {
+		num      string
 		labelKey string
 		warnKey  string
 	}{
 		{"1", "profile.item1", ""},
 		{"2", "profile.item2", "profile.warn"},
 	}
-	for i, it := range items {
-		label := it.num + ". " + i18n.T(it.labelKey)
+	for i, it := range rows {
+		label := i18n.T(it.labelKey)
 		if i == m.profileCursor {
-			body.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			items.WriteString("  " + selectedItemStyle.Render("▸ "+it.num+". "+label) + "\n")
 		} else {
-			body.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			items.WriteString("  " + itemStyle.Render("  "+numStyle(it.num)+". "+label) + "\n")
 		}
 		if i == 1 && m.profileCursor == 1 && it.warnKey != "" {
-			body.WriteString("\n  " + yellow(i18n.T(it.warnKey)) + "\n")
+			items.WriteString("\n  " + yellow(i18n.T(it.warnKey)) + "\n")
 		}
 	}
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader(i18n.T("profile.title")))
+	b.WriteString(m.topBar(i18n.T("profile.title")))
 	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("profile.help")))
+	b.WriteString(bottomBar(
+		[2]string{"↑/↓", i18n.T("help.select")},
+		[2]string{"Enter", i18n.T("help.confirm")},
+		[2]string{"Esc", i18n.T("help.back")},
+		[2]string{"q", i18n.T("help.quit")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
@@ -173,11 +178,15 @@ func (m Model) viewConfirm() string {
 	lines = append(lines, "", yellow(i18n.T("confirm.prompt")))
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader(i18n.T("confirm.title")))
+	b.WriteString(m.topBar(i18n.T("confirm.title")))
 	b.WriteString("\n\n")
 	b.WriteString(cardStyle.Render(strings.Join(lines, "\n")))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("confirm.help")))
+	b.WriteString(bottomBar(
+		[2]string{"y", i18n.T("help.yes")},
+		[2]string{"n", i18n.T("help.no")},
+		[2]string{"Esc", i18n.T("help.cancel")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
@@ -194,20 +203,23 @@ func (m Model) viewInput() string {
 	}
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader(i18n.T("menu.item4") + " / " + i18n.T("menu.item7")))
+	b.WriteString(m.topBar(i18n.T("menu.item7")))
 	b.WriteString("\n\n")
 	b.WriteString(cardStyle.Render(strings.Join(lines, "\n")))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("input.help")))
+	b.WriteString(bottomBar(
+		[2]string{"Enter", i18n.T("help.submit")},
+		[2]string{"Esc", i18n.T("help.back")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
 
-// viewVersion 版本列表选择页（标题与列表合成一个卡片）。
+// viewVersion 版本列表选择页。
 func (m Model) viewVersion() string {
-	var body strings.Builder
-	body.WriteString(headerStyle.Render(i18n.T("version.title")))
-	body.WriteString("\n\n")
+	var items strings.Builder
+	items.WriteString(cardTitle(i18n.T("version.title")))
+	items.WriteString("\n\n")
 	start := 0
 	if len(m.tags) > 12 {
 		start = m.tagCursor - 6
@@ -221,21 +233,26 @@ func (m Model) viewVersion() string {
 	for i := start; i < len(m.tags) && i < start+12; i++ {
 		label := fmt.Sprintf("%2d. %s", i+1, m.tags[i])
 		if i == m.tagCursor {
-			body.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
+			items.WriteString("  " + selectedItemStyle.Render("▸ "+label) + "\n")
 		} else {
-			body.WriteString("  " + itemStyle.Render("  "+label) + "\n")
+			items.WriteString("  " + itemStyle.Render("  "+numStyle(label)) + "\n")
 		}
 	}
 	if len(m.tags) > 12 {
-		body.WriteString(dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))) + "\n")
+		items.WriteString(dim(fmt.Sprintf(i18n.T("version.total"), len(m.tags))) + "\n")
 	}
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader(i18n.T("version.title")))
+	b.WriteString(m.topBar(i18n.T("version.title")))
 	b.WriteString("\n\n")
-	b.WriteString(cardStyle.Render(strings.TrimSuffix(body.String(), "\n")))
+	b.WriteString(cardStyle.Render(strings.TrimSuffix(items.String(), "\n")))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("version.help")))
+	b.WriteString(bottomBar(
+		[2]string{"↑/↓", i18n.T("help.select")},
+		[2]string{"Num", i18n.T("help.jump")},
+		[2]string{"Enter", i18n.T("help.install")},
+		[2]string{"Esc", i18n.T("help.back")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
@@ -244,11 +261,11 @@ func (m Model) viewVersion() string {
 func (m Model) viewLog() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader(m.logTitle))
+	b.WriteString(m.topBar(m.logTitle))
 	b.WriteString("\n\n")
 
 	// 计算可见日志窗口
-	visible := m.height - 10
+	visible := m.height - 8
 	if visible < 5 {
 		visible = 5
 	}
@@ -276,8 +293,12 @@ func (m Model) viewLog() string {
 		status += dim(fmt.Sprintf(i18n.T("log.scroll"), m.logScroll+1, len(m.logs)))
 	}
 	b.WriteString(status)
-	b.WriteString("\n")
-	b.WriteString(helpStyle.Render(i18n.T("log.help")))
+	b.WriteString("\n\n")
+	b.WriteString(bottomBar(
+		[2]string{"↑/↓", i18n.T("help.scroll")},
+		[2]string{"End", i18n.T("help.resume")},
+		[2]string{"q", i18n.T("help.quit")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
@@ -286,7 +307,15 @@ func (m Model) viewLog() string {
 func (m Model) viewResult() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(miniHeader(m.resultTitle))
+	b.WriteString(m.topBar(m.resultTitle))
+	b.WriteString("\n\n")
+
+	// 成功/失败标题行
+	if m.taskErr != nil {
+		b.WriteString(red("✘ " + i18n.T("common.failed")))
+	} else {
+		b.WriteString(green("✔ " + i18n.T("common.success")))
+	}
 	b.WriteString("\n\n")
 
 	start := len(m.logs) - 15
@@ -306,7 +335,10 @@ func (m Model) viewResult() string {
 	b.WriteString("\n\n")
 	b.WriteString(yellow(m.resultExtra))
 	b.WriteString("\n\n")
-	b.WriteString(helpStyle.Render(i18n.T("result.enter") + "  ·  " + i18n.T("result.quit")))
+	b.WriteString(bottomBar(
+		[2]string{"Enter", i18n.T("help.back")},
+		[2]string{"q", i18n.T("help.quit")},
+	))
 	b.WriteString("\n")
 	return b.String()
 }
