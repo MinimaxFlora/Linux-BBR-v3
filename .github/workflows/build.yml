@@ -133,7 +133,7 @@ jobs:
 
       - name: 检出代码
         if: env.BUILD_NEEDED == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           # 完整历史：回写配置基线前需要 git pull --rebase（浅克隆无法 rebase）
           fetch-depth: 0
@@ -207,7 +207,7 @@ jobs:
 
       - name: 上传最终配置文件
         if: env.BUILD_NEEDED == 'true' && matrix.profile == 'standard'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: config-${{ matrix.arch }}-${{ matrix.profile }}-${{ env.KERNEL_VERSION }}
           path: ./build-configs/${{ matrix.arch }}*.config
@@ -248,21 +248,21 @@ jobs:
 
       - name: 上传发布标记
         if: env.BUILD_NEEDED == 'true' && env.PUBLISH_NEEDED == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: publish-${{ matrix.arch }}-${{ matrix.profile }}-${{ env.KERNEL_VERSION }}
           path: ./publish-markers/${{ matrix.arch }}-${{ matrix.profile }}
 
       - name: 上传 deb 包
         if: env.BUILD_NEEDED == 'true' && env.PUBLISH_NEEDED == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: deb-${{ matrix.arch }}-${{ matrix.profile }}
           path: ./kernel/linux-*.deb
 
       - name: 发布到 GitHub Release
         if: env.BUILD_NEEDED == 'true' && env.PUBLISH_NEEDED == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ matrix.arch }}-${{ env.KERNEL_VERSION }}${{ matrix.release_suffix }}
           files: |
@@ -276,10 +276,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: 下载本轮最终配置
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7.0.1
         continue-on-error: true
         with:
           pattern: config-*-standard-*
@@ -287,7 +287,7 @@ jobs:
           merge-multiple: true
 
       - name: 下载发布标记
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7.0.1
         continue-on-error: true
         with:
           pattern: publish-*-standard-*
