@@ -1,10 +1,12 @@
 # Linux-BBR-v3
 
+🌏 **Languages:** 简体中文 | [English](README_EN.md) | [日本語](README_JA.md) | [한국어](README_KO.md)
+
 一个用于 Debian/Ubuntu VPS 的 BBRv3 内核安装与网络加速管理程序。
 
 本项目是 [byJoey/Actions-bbr-v3](https://github.com/byJoey/Actions-bbr-v3) 的 **Go + [bubbletea](https://github.com/charmbracelet/bubbletea) TUI 重写版**：
 
-- 原 shell 版 `install.sh` 重写为 Go 程序，**功能与选项完全一致**（12 项菜单、安全缓解、`bbr` 快捷命令）。
+- 原 shell 版 `install.sh` 重写为 Go 程序，**功能与选项完全一致**（交互菜单、安全缓解、`bbr` 快捷命令）。
 - 品牌标识由 `joeyblog` 替换为 `MinimaxFlora`（内核包名、配置路径、卸载匹配、MODULE_DESCRIPTION）。
 - 内核 `.deb` 包从本仓库 GitHub Releases 下载。
 
@@ -50,18 +52,16 @@ Debian testing/unstable 如果缺少 `VERSION_ID`，程序会按 `VERSION_CODENA
 ## 菜单功能
 
 ```text
- 1. 🚀 安装或更新 BBR v3 (最新版)
+ 1. 🚀 安装或更新 BBR v3（最新版）
  2. 📚 指定版本安装
  3. 🔍 检查 BBR v3 状态
- 4. ⚡ 启用 BBR + FQ
- 5. ⚡ 启用 BBR + FQ_CODEL
- 6. ⚡ 启用 BBR + FQ_PIE
- 7. ⚡ 启用 BBR + CAKE
- 8. 🌏 亚太机器 TCP 调优
- 9. 🗑️ 卸载 BBR 内核
-10. 🧠 BBR v3 智能带宽优化
-11. 🧹 清空网络优化配置
-12. 🧨 BBR v3 疯批模式（极限测速挑战）
+ 4. ⚡ 启用 BBR 加速模式（FQ / FQ_CODEL / FQ_PIE / CAKE 子菜单）
+ 5. 🌏 亚太机器 TCP 调优
+ 6. 🗑️ 卸载 BBR 内核
+ 7. 🧠 BBR v3 智能带宽优化
+ 8. 🧹 清空网络优化配置
+ 9. 🧨 BBR v3 疯批模式（极限测速挑战）
+10. 🔄 检测 TUI 更新
 ```
 
 常用流程：
@@ -69,11 +69,11 @@ Debian testing/unstable 如果缺少 `VERSION_ID`，程序会按 `VERSION_CODENA
 1. 选择 `1` 安装或更新 BBRv3 内核，并按提示选择标准版或 Max 极限版。
 2. 按提示重启系统。
 3. 重新运行，选择 `3` 检查 BBRv3 状态。
-4. 按需选择 `4` 到 `7` 设置队列算法。
-5. 亚太线路机器可选择 `8` 写入 TCP 收发窗口与空闲慢启动调优。
-6. 不确定线路参数时可选择 `10` 自动测速并按带宽档位计算 TCP 缓冲区。
-7. 做自有链路极限测速挑战时可选择 `12` 写入激进冲速率参数。
-8. 需要撤回调优时可选择 `11` 清空程序写入的网络优化配置。
+4. 选择 `4` 进入加速模式子菜单，按需选择 FQ / FQ_CODEL / FQ_PIE / CAKE。
+5. 亚太线路机器可选择 `5` 写入 TCP 收发窗口与空闲慢启动调优。
+6. 不确定线路参数时可选择 `7` 自动测速并按带宽档位计算 TCP 缓冲区。
+7. 做自有链路极限测速挑战时可选择 `9` 写入激进冲速率参数。
+8. 需要撤回调优时可选择 `8` 清空程序写入的网络优化配置。
 
 ## 内核与 BBR 策略
 
@@ -86,6 +86,7 @@ BBRv3 补丁固定，内核自动跟随 kernel.org 最新 stable 更新。
 ```text
 linux-7.0.y -> patches/bbrv3-linux-7.0.patch
 linux-7.1.y -> patches/bbrv3-linux-7.1.patch
+linux-7.2.y -> patches/bbrv3-linux-7.2.patch
 ```
 
 内核包由 GitHub Actions 构建并发布到 Releases，包名示例（Debian 包名规范要求全小写，`minimaxflora` 为品牌后缀）：
@@ -116,12 +117,14 @@ Max 版会提高 Startup、ProbeBW 和 cwnd 策略的进攻性，但保留 BBRv3
 
 ## 加速模式
 
-| 菜单 | 拥塞控制 | 队列算法 |
-| --- | --- | --- |
-| 4 | `bbr` | `fq` |
-| 5 | `bbr` | `fq_codel` |
-| 6 | `bbr` | `fq_pie` |
-| 7 | `bbr` | `cake` |
+选择 `4` 进入加速模式子菜单：
+
+| 选项 | 配置 |
+| --- | --- |
+| 1 | BBR + FQ（推荐，公平队列） |
+| 2 | BBR + FQ_CODEL（低延迟） |
+| 3 | BBR + FQ_PIE（比例积分） |
+| 4 | BBR + CAKE（蛋糕队列） |
 
 选择后立即尝试应用配置，并询问是否永久写入 `/etc/sysctl.d/99-minimaxflora.conf`。
 
@@ -129,7 +132,7 @@ Max 版会提高 Startup、ProbeBW 和 cwnd 策略的进攻性，但保留 BBRv3
 
 ## 亚太机器 TCP 调优
 
-选择 `8` 后立即应用并永久写入：
+选择 `5` 后立即应用并永久写入：
 
 ```text
 net.ipv4.tcp_wmem = 4096 16384 12582912
@@ -140,7 +143,7 @@ net.ipv4.tcp_slow_start_after_idle = 0
 
 ## BBR v3 智能带宽优化
 
-选择 `10` 后：
+选择 `7` 后：
 
 - 优先安装并运行 Ookla 官方 `speedtest 1.2.0`，自动尝试附近测速服务器并获取上传/下载带宽；检测到 Python 版 `speedtest-cli` 会先移除。测速失败时提示手动输入上传带宽。测速节点延迟被隐藏，不参与 RTT 计算。
 - 自动启用 `bbr` 拥塞控制和 `fq` 队列算法。
@@ -149,7 +152,7 @@ net.ipv4.tcp_slow_start_after_idle = 0
 
 ## BBR v3 疯批模式
 
-选择 `12` 后强制启用 `bbr` + `fq`，写入：
+选择 `9` 后强制启用 `bbr` + `fq`，写入：
 
 ```text
 net.core.default_qdisc=fq
@@ -177,7 +180,7 @@ net.ipv4.tcp_ecn = 0
 
 ## 清空网络优化配置
 
-选择 `11` 后清理本程序写入的持久配置（default_qdisc、拥塞控制、TCP buffer 全系列），并删除 `/etc/modules-load.d/minimaxflora-qdisc.conf`。只清空网络优化配置，不卸载 BBR 内核，也不移除 Dirty Frag 缓解规则。运行态参数可能需要重启后完全恢复默认。
+选择 `8` 后清理本程序写入的持久配置（default_qdisc、拥塞控制、TCP buffer 全系列），并删除 `/etc/modules-load.d/minimaxflora-qdisc.conf`。只清空网络优化配置，不卸载 BBR 内核，也不移除 Dirty Frag 缓解规则。运行态参数可能需要重启后完全恢复默认。
 
 ## 安全缓解
 
@@ -189,7 +192,7 @@ CVE-2026-31431 对应的 AEAD userspace 接口在新构建内核中由内核配�
 
 ## 卸载
 
-选择 `9` 卸载由本项目安装的 `MinimaxFlora` 内核包并更新引导配置。卸载后建议重启。
+选择 `6` 卸载由本项目安装的 `MinimaxFlora` 内核包并更新引导配置。卸载后建议重启。
 
 ## 构建
 
@@ -230,6 +233,7 @@ internal/
 scripts/                       # 内核构建脚本（CI 用，与原项目一致，包名已品牌化）
 patches/                       # BBRv3 补丁（固定）
 x86-64.config / arm64.config   # 内核配置基线
+.github/RELEASE_NOTES_cli.md   # bbrv3-cli release 说明（每次推送自动刷新）
 .github/workflows/build.yml      # 内核自动构建 + 发布（schedule / 手动触发）
 .github/workflows/release-cli.yml # Go TUI 二进制发布到 bbrv3-cli release（push master / 手动触发）
 ```
