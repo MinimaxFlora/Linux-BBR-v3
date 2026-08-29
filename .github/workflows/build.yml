@@ -313,7 +313,7 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: 下载本轮最终配置
-        uses: actions/download-artifact@v7.0.1
+        uses: actions/download-artifact@v8.0.1
         continue-on-error: true
         with:
           pattern: config-*-standard-*
@@ -321,7 +321,7 @@ jobs:
           merge-multiple: true
 
       - name: 下载发布标记
-        uses: actions/download-artifact@v7.0.1
+        uses: actions/download-artifact@v8.0.1
         continue-on-error: true
         with:
           pattern: publish-*-standard-*
