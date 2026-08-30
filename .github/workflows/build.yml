@@ -2,9 +2,8 @@ name: 构建带有BBRv3的内核
 
 on:
   workflow_dispatch:
-  schedule:
-    # Daily automatic kernel refresh. BBRv3 itself stays pinned to the repo patch.
-    - cron: "17 3 * * *"
+#  schedule:
+#    - cron: "17 3 * * *"
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
